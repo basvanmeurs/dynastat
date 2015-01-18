@@ -38,7 +38,7 @@ var CollisionPoint = function(pointSolidObject, point, edgeSolidObject, edge) {
      * @returns {string}
      */
     this.toString = function() {
-        var str = "CollisionPoint[" + this.point.getAbsoluteCoordinates().toString() + ", " + this.edge.getEdgeString() + "]";
+        var str = "CollisionPoint[" + this.point.getAbsoluteCoordinates().toString() + ", " + this.edge.getEdgeString() + " | " + this.point.index + ";" + this.edge.index + "]";
         return str;
     }
 };

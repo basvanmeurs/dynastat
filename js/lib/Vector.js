@@ -41,6 +41,16 @@ var Vector = function (x, y) {
     };
 
     /**
+     * @param {Number} f
+     * @return {Vector}
+     */
+    this.imul = function (f) {
+        this.x *= f;
+        this.y *= f;
+        return this;
+    };
+
+    /**
      * @param {Vector} that
      * @return {Number}
      */

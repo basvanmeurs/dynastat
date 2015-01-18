@@ -1,0 +1,317 @@
+Consider using 'dppx' units, as in CSS 'dpi' means dots-per-CSS-inch, not dots-per-physical-inch, so does not correspond to the actual 'dpi' of a screen. In media query expression: print, not all, (-webkit-min-device-pixel-ratio: 1.25), (min-resolution: 120dpi)adjust: 0.025ms
+start intersection problem @ 0
+collision: 10.321ms
+adjust: 0.046ms
+collision: 2.273ms
+adjust: 0.005ms
+collision: 2.164ms
+adjust: 0.010ms
+collision: 6.292ms
+adjust: 0.005ms
+collision: 1.922ms
+adjust: 0.010ms
+collision: 6.544ms
+adjust: 0.010ms
+collision: 6.024ms
+adjust: 0.011ms
+collision: 6.449ms
+adjust: 0.005ms
+collision: 1.748ms
+adjust: 0.012ms
+collision: 4.248ms
+adjust: 0.005ms
+collision: 1.930ms
+adjust: 0.010ms
+collision: 7.213ms
+adjust: 0.007ms
+collision: 2.845ms
+adjust: 0.006ms
+collision: 5.113ms
+adjust: 0.012ms
+collision: 6.177ms
+adjust: 0.005ms
+collision: 2.133ms
+adjust: 0.006ms
+collision: 1.668ms
+adjust: 0.006ms
+collision: 4.298ms
+adjust: 0.006ms
+collision: 3.241ms
+adjust: 0.010ms
+collision: 6.421ms
+adjust: 0.006ms
+collision: 16.995ms
+adjust: 0.012ms
+collision: 2.138ms
+adjust: 0.006ms
+collision: 2.151ms
+adjust: 0.005ms
+collision: 1.538ms
+adjust: 0.007ms
+collision: 3.517ms
+adjust: 0.006ms
+collision: 2.385ms
+adjust: 0.007ms
+collision: 5.000ms
+adjust: 0.011ms
+collision: 1.713ms
+adjust: 0.005ms
+collision: 1.960ms
+adjust: 0.005ms
+collision: 6.966ms
+1.4736328125000007 CollisionPoint[[12.72,-14.99], edge[[-98.00,-15.00] - [98.00,-15.00]] | 2;2] (from 1.4736328125000007, frame 30)
+adjust: 3.656ms
+collision: 2.062ms
+disabled point: CollisionPoint[[13.27,-14.53], edge[[-98.00,-15.00] - [98.00,-15.00]] | 2;2]
+adjust: 1.832ms
+collision: 2.840ms
+adjust: 0.014ms
+collision: 11.123ms
+1.6015625000000009 CollisionPoint[[-16.84,-14.99], edge[[-98.00,-15.00] - [98.00,-15.00]] | 3;2] (from 1.6015625000000009, frame 33)
+adjust: 0.469ms
+collision: 15.273ms
+1.6054687500000009 CollisionPoint[[23.58,-15.00], edge[[-98.00,-15.00] - [98.00,-15.00]] | 2;2] (from 1.6054687500000009, frame 34)
+disabled point: CollisionPoint[[-16.89,-14.96], edge[[-98.00,-15.00] - [98.00,-15.00]] | 3;2]
+adjust: 2.132ms
+collision: 10.128ms
+1.6445312500000009 CollisionPoint[[13.58,2.80], edge[[-2.19,6.25] - [13.83,2.74]] | 2;0] (from 1.6445312500000009, frame 35)
+disabled point: CollisionPoint[[23.61,-14.55], edge[[-98.00,-15.00] - [98.00,-15.00]] | 2;2]
+adjust: 2.633ms
+collision: 17.518ms
+1.6904296875000009 CollisionPoint[[14.17,-14.99], edge[[-98.00,-15.00] - [98.00,-15.00]] | 2;2] (from 1.6904296875000009, frame 36)
+collision point slid away: CollisionPoint[[14.72,1.70], edge[[-2.47,4.99] - [13.54,1.39]] | 2;0]
+adjust: 6.800ms
+collision: 2.527ms
+disabled point: CollisionPoint[[14.65,-14.66], edge[[-98.00,-15.00] - [98.00,-15.00]] | 2;2]
+adjust: 1.097ms
+collision: 5.091ms
+adjust: 0.085ms
+collision: 14.325ms
+1.822656250000001 CollisionPoint[[20.87,0.65], edge[[26.15,4.46] - [18.04,-1.39]] | 3;1] (from 1.822656250000001, frame 39)
+adjust: 0.262ms
+collision: 3.586ms
+disabled point: CollisionPoint[[21.22,0.02], edge[[26.20,4.74] - [18.63,-1.79]] | 3;1]
+adjust: 0.642ms
+collision: 6.806ms
+adjust: 0.007ms
+collision: 4.903ms
+adjust: 0.005ms
+collision: 22.658ms
+1.978125000000001 CollisionPoint[[25.89,-15.00], edge[[-98.00,-15.00] - [98.00,-15.00]] | 2;2] (from 1.978125000000001, frame 43)
+adjust: 0.481ms
+collision: 5.296ms
+disabled point: CollisionPoint[[26.39,-14.84], edge[[-98.00,-15.00] - [98.00,-15.00]] | 2;2]
+adjust: 2.660ms
+collision: 10.808ms
+adjust: 0.014ms
+collision: 20.721ms
+2.110937500000001 CollisionPoint[[-5.12,-4.69], edge[[17.21,-13.30] - [-7.05,-3.94]] | 1;2] (from 2.110937500000001, frame 46)
+adjust: 0.566ms
+collision: 15.002ms
+2.132421875000001 CollisionPoint[[-7.14,-15.00], edge[[-98.00,-15.00] - [98.00,-15.00]] | 2;2] (from 2.132421875000001, frame 47)
+re-enable
+look-ahead: 15.407409507454814,5.6715297443698445
+adjust: 11.077ms
+collision: 40.184ms
+2.135742187500001 CollisionPoint[[-5.01,-5.22], edge[[17.25,-13.33] - [-7.18,-4.43]] | 1;2] (from 2.135742187500001, frame 48)
+re-enable
+look-ahead: 1.5543514773989235,1.5916374067840418
+adjust: 2.025ms
+collision: 9.403ms
+2.1818359375000007 CollisionPoint[[8.58,0.09], edge[[8.37,0.42] - [17.07,-13.47]] | 3;1] (from 2.1818359375000007, frame 49)
+re-enable
+look-ahead: 9.081561458483671,3.3278447373114224,2.7595411930850804
+adjust: 1.997ms
+collision: 8.516ms
+2.1818359375000007 CollisionPoint[[-5.07,-5.26], edge[[17.07,-13.47] - [-7.30,-4.43]] | 1;2] (from 2.1818359375000007, frame 50)
+re-enable
+look-ahead: 3.1913941899820357,2.220292540602131,0
+disabled point: CollisionPoint[[8.58,0.09], edge[[8.37,0.42] - [17.07,-13.47]] | 3;1]
+adjust: 2.410ms
+collision: 8.343ms
+2.2255859375000004 CollisionPoint[[28.35,-15.00], edge[[-98.00,-15.00] - [98.00,-15.00]] | 2;2] (from 2.2255859375000004, frame 51)
+re-enable
+look-ahead: 1.6641758138472524,0.6124564422699386,-4.6509062806586236e-11
+adjust: 1.831ms
+collision: 6.902ms
+adjust: 0.547ms
+collision: 4.082ms
+adjust: 0.828ms
+collision: 14.580ms
+2.3458984375 CollisionPoint[[15.01,-14.99], edge[[-98.00,-15.00] - [98.00,-15.00]] | 2;2] (from 2.3458984375, frame 54)
+adjust: 0.769ms
+collision: 2.597ms
+re-enable
+look-ahead: 1.8624415428530174,0.6859254235435054,-5.398290112816828e-11,0
+disabled point: CollisionPoint[[14.70,-14.87], edge[[-98.00,-15.00] - [98.00,-15.00]] | 2;2]
+adjust: 3.479ms
+collision: 4.029ms
+adjust: 0.631ms
+collision: 3.633ms
+adjust: 0.690ms
+collision: 2.116ms
+adjust: 1.645ms
+collision: 10.554ms
+2.5552734374999995 CollisionPoint[[13.58,-15.00], edge[[-98.00,-15.00] - [98.00,-15.00]] | 2;2] (from 2.5552734374999995, frame 59)
+adjust: 0.785ms
+collision: 2.344ms
+re-enable
+look-ahead: 2.0631924626375144,0.753883643830305,-6.098790928870312e-11,0.006879921063729182
+adjust: 8.845ms
+collision: 8.526ms
+adjust: 0.734ms
+collision: 23.099ms
+2.677539062499999 CollisionPoint[[13.64,-14.99], edge[[-98.00,-15.00] - [98.00,-15.00]] | 3;2] (from 2.677539062499999, frame 62)
+adjust: 1.802ms
+collision: 4.809ms
+disabled point: CollisionPoint[[13.66,-14.63], edge[[-98.00,-15.00] - [98.00,-15.00]] | 3;2]
+adjust: 2.238ms
+collision: 4.048ms
+adjust: 1.742ms
+collision: 5.315ms
+adjust: 2.620ms
+collision: 3.440ms
+adjust: 1.356ms
+collision: 4.728ms
+adjust: 1.443ms
+collision: 4.896ms
+adjust: 1.095ms
+collision: 13.632ms
+2.989697265624997 CollisionPoint[[43.56,-15.00], edge[[-98.00,-15.00] - [98.00,-15.00]] | 1;2] (from 2.989697265624997, frame 69)
+disabled point: CollisionPoint[[-10.27,-5.67], edge[[11.66,-14.96] - [-12.28,-4.80]] | 1;2]
+adjust: 7.177ms
+collision: 6.170ms
+disabled point: CollisionPoint[[44.10,-14.92], edge[[-98.00,-15.00] - [98.00,-15.00]] | 1;2]
+adjust: 1.941ms
+collision: 22.093ms
+3.040087890624997 CollisionPoint[[-10.76,-5.63], edge[[11.52,-14.96] - [-12.47,-4.92]] | 1;2] (from 3.040087890624997, frame 71)
+look-ahead: 0.5199525448283184,-4.513107623903953e-11,0.08301094057552062,1.5445766358614752
+adjust: 8.062ms
+collision: 23.796ms
+disabled point: CollisionPoint[[-11.27,-5.59], edge[[11.38,-14.96] - [-12.63,-4.97]] | 1;2]
+adjust: 4.159ms
+collision: 3.435ms
+adjust: 1.157ms
+collision: 16.285ms
+3.1459472656249967 CollisionPoint[[-11.86,-5.54], edge[[11.26,-14.96] - [-12.81,-5.15]] | 1;2] (from 3.1459472656249967, frame 74)
+look-ahead: 0.4947644516348504,-4.390919530906195e-11,0.11326115878434516,1.524072103424405
+adjust: 4.122ms
+collision: 10.390ms
+disabled point: CollisionPoint[[-12.41,-5.48], edge[[11.15,-14.96] - [-12.95,-5.21]] | 1;2]
+adjust: 15.484ms
+collision: 8.726ms
+3.2012207031249966 CollisionPoint[[28.11,-15.00], edge[[-98.00,-15.00] - [98.00,-15.00]] | 2;2] (from 3.2012207031249966, frame 76)
+adjust: 0.901ms
+collision: 2.048ms
+disabled point: CollisionPoint[[28.41,-14.85], edge[[-98.00,-15.00] - [98.00,-15.00]] | 2;2]
+adjust: 1.279ms
+collision: 11.223ms
+3.288818359374996 CollisionPoint[[46.47,-15.00], edge[[-98.00,-15.00] - [98.00,-15.00]] | 1;2] (from 3.288818359374996, frame 78)
+adjust: 0.765ms
+collision: 7.526ms
+3.2915039062499964 CollisionPoint[[14.64,-15.00], edge[[-98.00,-15.00] - [98.00,-15.00]] | 3;2] (from 3.2915039062499964, frame 79)
+disabled point: CollisionPoint[[46.49,-15.00], edge[[-98.00,-15.00] - [98.00,-15.00]] | 1;2]
+adjust: 2.185ms
+collision: 1.720ms
+adjust: 0.836ms
+collision: 2.498ms
+adjust: 0.748ms
+collision: 6.336ms
+3.422753906249996 CollisionPoint[[47.76,-15.00], edge[[-98.00,-15.00] - [98.00,-15.00]] | 1;2] (from 3.422753906249996, frame 82)
+adjust: 1.043ms
+collision: 2.218ms
+adjust: 1.406ms
+collision: 4.805ms
+adjust: 1.237ms
+collision: 1.571ms
+adjust: 2.782ms
+collision: 9.864ms
+3.598291015624995 CollisionPoint[[29.84,-15.00], edge[[-98.00,-15.00] - [98.00,-15.00]] | 2;2] (from 3.598291015624995, frame 86)
+adjust: 1.784ms
+collision: 3.042ms
+adjust: 2.978ms
+collision: 1.509ms
+adjust: 3.548ms
+collision: 14.521ms
+3.7005432128906195 CollisionPoint[[-32.76,-15.00], edge[[-98.00,-15.00] - [98.00,-15.00]] | 3;2] (from 3.7005432128906195, frame 89)
+adjust: 2.610ms
+collision: 2.845ms
+disabled point: CollisionPoint[[-33.32,-14.87], edge[[-98.00,-15.00] - [98.00,-15.00]] | 3;2]
+adjust: 8.681ms
+collision: 3.391ms
+adjust: 2.086ms
+collision: 3.129ms
+adjust: 1.736ms
+collision: 13.444ms
+3.882769775390619 CollisionPoint[[-13.86,-15.00], edge[[-98.00,-15.00] - [98.00,-15.00]] | 0;2] (from 3.882769775390619, frame 93)
+adjust: 6.975ms
+collision: 10.751ms
+disabled point: CollisionPoint[[-14.05,-14.74], edge[[-98.00,-15.00] - [98.00,-15.00]] | 0;2]
+adjust: 7.062ms
+collision: 2.603ms
+adjust: 5.756ms
+collision: 12.005ms
+4.011090087890619 CollisionPoint[[-35.92,-15.00], edge[[-98.00,-15.00] - [98.00,-15.00]] | 3;2] (from 4.011090087890619, frame 96)
+adjust: 2.485ms
+collision: 4.672ms
+adjust: 8.712ms
+collision: 6.871ms
+adjust: 6.928ms
+collision: 9.459ms
+adjust: 5.997ms
+collision: 11.061ms
+4.206671142578118 CollisionPoint[[-14.73,-15.00], edge[[-98.00,-15.00] - [98.00,-15.00]] | 0;2] (from 4.206671142578118, frame 100)
+adjust: 3.780ms
+collision: 1.510ms
+adjust: 6.132ms
+collision: 4.742ms
+adjust: 5.035ms
+collision: 5.599ms
+adjust: 1.594ms
+collision: 2.156ms
+adjust: 1.677ms
+collision: 2.223ms
+adjust: 4.184ms
+collision: 4.675ms
+adjust: 1.932ms
+collision: 2.632ms
+adjust: 2.154ms
+collision: 3.185ms
+adjust: 4.973ms
+collision: 6.568ms
+adjust: 4.286ms
+collision: 6.184ms
+adjust: 1.625ms
+collision: 2.179ms
+adjust: 1.659ms
+collision: 1.500ms
+adjust: 2.636ms
+collision: 2.911ms
+adjust: 6.530ms
+collision: 2.050ms
+adjust: 1.794ms
+collision: 3.508ms
+adjust: 2.466ms
+collision: 4.235ms
+adjust: 5.322ms
+collision: 2.299ms
+adjust: 5.290ms
+collision: 2.120ms
+adjust: 1.638ms
+collision: 1.553ms
+adjust: 2.175ms
+collision: 1.999ms
+adjust: 2.828ms
+collision: 3.500ms
+adjust: 6.307ms
+collision: 3.115ms
+adjust: 2.915ms
+collision: 5.142ms
+adjust: 6.490ms
+collision: 4.133ms
+adjust: 4.239ms
+collision: 3.004ms
+adjust: 3.902ms
+collision: 4.284ms
+adjust: 2.817ms
+collision: 3.361ms

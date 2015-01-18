@@ -27,14 +27,30 @@ var SpeedAdjuster = function(scene) {
 
     /**
      * Checks the existing scene and adjust speeds. Deletes collision points that are no longer valid.
+     * @param {number} dt
+     *   The max step duration.
+     * @return {number}
+     *   The corrected step duration. This occurs when the rotation speed is high.
      */
-    this.adjust = function() {
+    this.adjust = function(dt) {
         var i, c, o1, o2;
         this.counter++;
 
+        // Remove collision points that have slided away from the collision edge.
         if (this.scene.collisionPoints.length > 0) {
-            //@todo: check collisions for validity (x-axis).
+            this.scene.collisionPoints = this.scene.collisionPoints.filter(function (cp) {
+                var x = cp.edge.getPointLateralPositionRelativeToThis(cp.point);
+                var correct = true;
+                if (x < 0) {
+                    correct = -x * cp.edge.edgeLength <= Scene.COLLISION_PROXIMITY;
+                } else if (x > 1) {
+                    correct = (x - 1) * cp.edge.edgeLength <= Scene.COLLISION_PROXIMITY;
+                }
+                return correct;
+            });
+        }
 
+        if (this.scene.collisionPoints.length > 0) {
             var info = [];
             for (i = 0; i < this.scene.collisionPoints.length; i++) {
                 // Set physics info object for later use.
@@ -86,7 +102,6 @@ var SpeedAdjuster = function(scene) {
                     info[i].n
                 );
 
-                // Remove very small speeds so that infinite bounce does not occur.
                 var key = "" + cp.edgeSolidObject.index + "-" + cp.edge.index + "_" + cp.pointSolidObject.index + "-" + cp.point.index;
                 var time = cp.edgeSolidObject.t;
                 var bounce = false;
@@ -95,14 +110,36 @@ var SpeedAdjuster = function(scene) {
                 } else {
                     bounce = false;
                 }
-                this.lastCollisionsTimes[key] = time;
-                var d = vd * (bounce ? -1.2 : -1.001);
 
-                // Fix bug: bounce-back.
-                d = d + .1;
+                this.lastCollisionsTimes[key] = time;
+
+                var d;
+                if (bounce) {
+                    d = vd * -1.4;
+                } else {
+                    // In case that there is a distance between the edge and the point, let some of the speed
+                    // remain so that the distance will decrease.
+                    var dist = cp.edge.getPointDistanceRelativeToThis(cp.point);
+                    if (dist > Scene.COLLISION_PROXIMITY) {
+                        // Get required speed in order to compensate during dt timeframe.
+                        var s = (Scene.COLLISION_PROXIMITY - dist) / dt;
+
+                        if (vd > 0) {
+                            d = -vd;
+                        } else {
+                            if (vd > s) {
+                                d = 0;
+                            } else {
+                                d = s - vd;
+                            }
+                        }
+                    } else {
+                        d = -vd;
+                    }
+                }
 
                 var item = {result: d, sideEffects: info[i].sideEffects};
-                if (d < 0) {
+                if (d < -1e-4) {
                     item.disabled = true;
                     disabled++;
                 }
@@ -110,14 +147,17 @@ var SpeedAdjuster = function(scene) {
             }
 
             var anyDisabled, anyEnabled;
+            var counter = 0;
             do {
+                counter++;
                 var result = this.matrixSolver.solve(items);
 
                 // Check if there are negative results. These items should be disabled.
                 anyDisabled = false;
                 anyEnabled = false;
                 for (i = 0; i < result.length; i++) {
-                    if (result[i] < 0) {
+                    if (result[i] < -1e-4) { // Be aware of rounding errors!
+                        console.log(result[i]);
                         items[i].disabled = true;
                         disabled++;
                         anyDisabled = true;
@@ -143,7 +183,7 @@ var SpeedAdjuster = function(scene) {
                             if (items[i].disabled) {
                                 // Check if there are collision speed diff problems.
                                 var t = this.getCollisionPointSpeedDiff(this.scene.collisionPoints[i], info[i]);
-                                if (t < 0) {
+                                if (t < -1e-4) { // Be aware of rounding errors!
                                     // Colliding points are moving towards each other.
                                     anyEnabled = true;
                                     items[i].disabled = false;
@@ -162,6 +202,9 @@ var SpeedAdjuster = function(scene) {
                 }
             } while (anyDisabled || anyEnabled);
 
+            // Bounce-back.
+            dt = this.lookAhead(dt, info, items);
+
             if (disabled > 0) {
                 // Remove invalid collision points.
                 var newCollisionPoints = [];
@@ -172,9 +215,85 @@ var SpeedAdjuster = function(scene) {
                 }
                 this.scene.collisionPoints = newCollisionPoints;
             }
-            // Fix bug: bounce-back. Have to fix by look-ahead of edge progression and extra d.
         }
+
+        return dt;
+    };
+
+    /**
+     * Adjusts the speeds by looking ahead.
+     * @param {number} dt
+     * @param {Object[]} info
+     * @param {Object[]} items
+     * @return {number}
+     *   The corrected step duration. This occurs when the rotation speed is high.
+     */
+    this.lookAhead = function(dt, info, items) {
+        //@todo: limit dt if necessary.
+        // rotationSpeed * dt < .5 * PI.
+
+        var step = function(cp, dt) {
+            cp.pointSolidObject.step(dt, true);
+            cp.pointSolidObject.updateCornerPoint(cp.point);
+
+            cp.edgeSolidObject.step(dt, true);
+            cp.edgeSolidObject.updateCornerPoint(cp.edge);
+            cp.edgeSolidObject.updateCornerPoint(cp.edge.next);
+        };
+
         var i;
+        var adjustments = [];
+        var adjustmentNecessary = false;
+        var relY1;
+        for (i = 0; i < scene.collisionPoints.length; i++) {
+            var cp = scene.collisionPoints[i];
+
+            cp.pointSolidObject.saveSituation();
+            cp.edgeSolidObject.saveSituation();
+
+            // Step ahead to dt.
+            step(cp, dt);
+
+            // Get y relative to edge.
+            relY1 = cp.edge.getPointDistanceRelativeToThis(cp.point);
+            if (relY1 < 0) {
+                adjustmentNecessary = true;
+
+                // Calculate adjustment.
+                var diff = Scene.COLLISION_PROXIMITY * .5 - relY1;
+                items[i].result = (diff / dt) * 10;
+
+                if (items[i].disabled) {
+                    // Item should be enabled again.
+                    items[i].disabled = false;
+                }
+
+            } else {
+                items[i].result = 0;
+            }
+
+            // Step back.
+            cp.pointSolidObject.resetSituation();
+            cp.edgeSolidObject.resetSituation();
+        }
+
+        if (adjustmentNecessary) {
+            var result = this.matrixSolver.solve(items);
+
+            // Apply results.
+            for (i = 0; i < info.length; i++) {
+                if (!items[i].disabled) {
+                    var r = result[i];
+                    info[i].o1.speed = info[i].o1.speed.add(info[i].dv1.mul(r));
+                    info[i].o2.speed = info[i].o2.speed.add(info[i].dv2.mul(r));
+                    info[i].o1.rotationSpeed += info[i].dw1 * r;
+                    info[i].o2.rotationSpeed += info[i].dw2 * r;
+                }
+            }
+            console.log('look-ahead');
+        }
+
+        return dt;
     };
 
     /**
@@ -248,6 +367,7 @@ var SpeedAdjuster = function(scene) {
         // Get dv1, dv2, dw1 and dw2 per 1 unit of moment.
         var dv1 = n.mul(-1 / o1.mass);
         var dv2 = n.mul(1 / o2.mass);
+        //@todo: cross product?
         var dw1 = -1 * r1.getPerp().d(n) / o1.inertia;
         var dw2 = r2.getPerp().d(n) / o2.inertia;
 
@@ -319,8 +439,23 @@ var MatrixSolver = function(nEdges) {
      * @pre The matrix is an identity matrix (1 on diagonal, 0 elsewhere).
      * @post The matrix is still an identity matrix.
      */
-    this.solve = function(items) {        //window.scene.t == 8.04718627929686
+    this.solve = function(inputItems) {
         var i, j, k, n, m, o, v;
+
+        // Clone input items to maintain them originally.
+        var items = [];
+        var item;
+        for (i = 0; i < inputItems.length; i++) {
+            item = {
+                result: inputItems[i].result,
+                disabled: inputItems[i].disabled,
+                sideEffects: []
+            };
+            for (j = 0; j < inputItems[i].sideEffects.length; j++) {
+                item.sideEffects.push(inputItems[i].sideEffects[j]);
+            }
+            items.push(item);
+        }
 
         // Initialize item objects.
         n = items.length;
@@ -377,9 +512,11 @@ var MatrixSolver = function(nEdges) {
             // Normalize row so that pivot is 1.
             if (this.matrix[index][index] != 1) {
                 if (this.matrix[index][index] == 0) {
-                    throw "matrix division by zero";
+                    // This is a strange situation that can occur. The effect would be for v to be very high.
+                    v = 1000;
+                } else {
+                    v = 1 / this.matrix[index][index];
                 }
-                v = 1 / this.matrix[index][index];
                 this.matrix[index][index] = 1;
                 n = item.rowNonZeroes.length;
                 for (j = 0; j < n; j++) {

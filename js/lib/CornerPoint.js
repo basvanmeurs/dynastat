@@ -96,9 +96,11 @@ var CornerPoint = function(index, coordinates) {
 
     /**
      * Returns the collision helper variables.
+     * @param {Boolean} [bboxOnly]
+     *   If set, only the bbox will be calculated.
      * @return {{edge : Vector, minX : Number, minY: Number, maxX : Number, maxY : Number, p : Number, mx : Number, my : Number}}
      */
-    this.getCollisionHelperVariables = function() {
+    this.getCollisionHelperVariables = function(bboxOnly) {
         if (this.collisionHelperVariables == null) {
             // Calculate.
             var v = {
@@ -119,13 +121,17 @@ var CornerPoint = function(index, coordinates) {
                 v.maxY = this.absoluteCoordinates.y;
             }
 
+            this.collisionHelperVariables = v;
+        }
+
+        if (!bboxOnly && this.collisionHelperVariables.p == undefined) {
+            v = this.collisionHelperVariables;
             // These are the vectors that can be used to convert absolute coordinates to coordinates relative to this normalized edge (on y=0, with x 0 to 1).
             v.p = 1 / v.edge.d(v.edge); // v.p is the division between the squared length of this edge, which is useful for determining the intersection proximity.
             v.mx = v.edge.mul(v.p);
-            v.my = v.edge.getPerp().mul(v.p);
-
-            this.collisionHelperVariables = v;
+            v.my = v.edge.getPerp().imul(v.p);
         }
+
         return this.collisionHelperVariables;
     };
 
@@ -135,8 +141,8 @@ var CornerPoint = function(index, coordinates) {
      * @return {Boolean}
      */
     this.checkCollisionBounds = function(that) {
-        var bbox1 = this.getCollisionHelperVariables();
-        var bbox2 = that.getCollisionHelperVariables();
+        var bbox1 = this.getCollisionHelperVariables(true);
+        var bbox2 = that.getCollisionHelperVariables(true);
         return (bbox1.maxX >= bbox2.minX) &&
             (bbox2.maxX >= bbox1.minX) &&
             (bbox1.maxY >= bbox2.minY) &&
@@ -287,6 +293,46 @@ var CornerPoint = function(index, coordinates) {
     };
 
     /**
+     * Returns the distance of that corner point relative to this edge.
+     * @param {CornerPoint} that
+     * @return {number}
+     *   The coordinates space works as follows: the start vector of this edge is [0,0] and the end vector is [1,0].
+     */
+    this.getPointDistanceRelativeToThis = function(that) {
+        // Get the absolute coordinates of all points.
+        var v1 = this.absoluteCoordinates;
+        var v2 = this.next.absoluteCoordinates;
+        var u = that.absoluteCoordinates;
+
+        // We use pre-calculated collision helper variables for performance reasons.
+        var v = this.getCollisionHelperVariables();
+
+        // Actually perform the calculations.
+        var k = u.sub(v1);
+        return v.my.d(k);
+    };
+
+    /**
+     * Returns the lateral position of that corner point relative to this edge.
+     * @param {CornerPoint} that
+     * @return {number}
+     *   The coordinates space works as follows: the start vector of this edge is [0,0] and the end vector is [1,0].
+     */
+    this.getPointLateralPositionRelativeToThis = function(that) {
+        // Get the absolute coordinates of all points.
+        var v1 = this.absoluteCoordinates;
+        var v2 = this.next.absoluteCoordinates;
+        var u = that.absoluteCoordinates;
+
+        // We use pre-calculated collision helper variables for performance reasons.
+        var v = this.getCollisionHelperVariables();
+
+        // Actually perform the calculations.
+        var k = u.sub(v1);
+        return v.mx.d(k);
+    };
+
+    /**
      * Returns the coordinates of that edge relative to this edge.
      * @param {CornerPoint} that
      * @return {{s : Vector, e : Vector}}
@@ -328,11 +374,13 @@ var CornerPoint = function(index, coordinates) {
         var dx = coords.e.x - coords.s.x;
         var dy = coords.e.y - coords.s.y;
 
+        var dyInv = 1 / dy;
+
         // Get intersection point on x-axis.
-        var thisEdge = coords.s.x - coords.s.y * (dx / dy);
+        var thisEdge = coords.s.x - coords.s.y * (dx * dyInv);
 
 
-        var thatEdge = Math.abs(coords.s.y / dy);
+        var thatEdge = Math.abs(coords.s.y * dyInv);
 
         return {thisEdge : thisEdge, thatEdge : thatEdge};
     };

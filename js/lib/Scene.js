@@ -1,5 +1,7 @@
 var Scene = function() {
 
+    var self = this;
+
     /**
      * An array of objects in the scene.
      * @type {SolidObject[]}
@@ -44,30 +46,53 @@ var Scene = function() {
      */
     this.nextObjectIndex = 0;
 
+    this.frame = 0;
+    this.totalAdjustTime = 0;
+    this.totalCollisionTime = 0;
+
     /**
      * Takes a time step.
      * @param dt
      */
     this.step = function(dt) {
-        this.recursionCounter++;
+        this.frame++;
+
+        var i;
+
+        // Apply speeds added during the last run.
+        for (i = 0; i < this.objects.length; i++) {
+            this.objects[i].applyAddedSpeed();
+        }
+
         // Correct the speeds in the current model.
-        this.speedAdjuster.adjust();
+
+        var t1 = (new Date()).getTime();
+        dt = this.speedAdjuster.adjust(dt);
+        this.totalAdjustTime += (new Date()).getTime() - t1;
+
+        var lt = this.t;
 
         var maxTime = this.t + dt;
+        t1 = (new Date()).getTime();
         var info = this.getNextCollision(maxTime);
+        this.totalCollisionTime += (new Date()).getTime() - t1;
 
-        //@todo: check for collision at info.t. if so, use this and check again.
-if (info) {
-    console.log(info.t);
-}
+        if (this.frame == 100) {
+            console.log('adjust: ' + this.totalAdjustTime);
+            console.log('collision: ' + this.totalCollisionTime);
+//            throw "ready";
+        }
+
         if (info == null) {
             this.setT(maxTime);
         } else {
             // Go up to the collision time.
             this.setT(info.t);
 
+            console.log(info.t + ' ' + info.collision.toString() + ' (from ' + this.t + ', frame ' + this.frame + ')');
+
             // Add collision points.
-            for (var i = 0; i < info.collision.length; i++) {
+            for (i = 0; i < info.collision.length; i++) {
                 // Remove duplicates in collision points.
                 var exists = false;
                 for (var j = 0; j < this.collisionPoints.length; j++) {
@@ -81,10 +106,10 @@ if (info) {
                 }
             }
 
-            // Perform the remaining step as well.
-            this.step(maxTime - info.t);
+            return info.t - lt;
         }
-        this.recursionCounter = 0;
+
+        return maxTime - lt;
     };
 
     /**
@@ -128,18 +153,27 @@ if (info) {
         if (minT == null) {
             return null;
         } else {
-            return {t : minT, collision: collisionPoints};
+            // Check again at minT.
+            var result = this.getNextCollision(minT);
+            if (result == null) {
+                return {t : minT, collision: collisionPoints};
+            } else {
+                console.log('double collision');
+                return result;
+            }
         }
     };
 
-
     this.play = function() {
-        var self = this;
+        var latestDt = this.step(Scene.TIMESTEP);
+        if (latestDt < Scene.TIMESTEP * .5) {
+            // Try to do another step because the gained time was very small.
+            latestDt += this.step(Scene.TIMESTEP - latestDt);
+        }
         setTimeout(function() {
-            self.step(Scene.TIMESTEP);
             self.view.update();
             self.play();
-        }, Scene.TIMESTEP * 1000)
+        }, latestDt * 1000);
     };
 
     this.addObject = function(o) {
@@ -161,10 +195,10 @@ if (info) {
  * A collision will only occur within this threshold.
  * @type {Number}
  */
-Scene.COLLISION_PROXIMITY = .001; // 1mm.
+Scene.COLLISION_PROXIMITY = .01; // 1cm.
 
 /**
  * The time step per iteration.
  * @type {number}
  */
-Scene.TIMESTEP = .1;
+Scene.TIMESTEP = .05;

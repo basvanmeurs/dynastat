@@ -33,7 +33,7 @@ var View = function(scene) {
      * Updates the canvas.
      */
     this.update = function() {
-        this.context.clearRect(0, 0, 600, 600);
+        this.context.clearRect(0, 0, 1000, 1000);
         this.context.strokeStyle = '#000000';
 
         var collisions = [];
@@ -61,8 +61,8 @@ var View = function(scene) {
                 this.context.lineTo(e.x, e.y);
                 this.context.stroke();
 
-                this.context.strokeText(obj.cornerPoints[j].getAbsoluteCoordinates().toString(), s.x - 20, s.y - 10);
-                this.context.strokeText(obj.cornerPoints[j].next.getAbsoluteCoordinates().toString(), e.x - 20, e.y - 10);
+//                this.context.strokeText(obj.cornerPoints[j].getAbsoluteCoordinates().toString(), s.x - 20, s.y - 10);
+//                this.context.strokeText(obj.cornerPoints[j].next.getAbsoluteCoordinates().toString(), e.x - 20, e.y - 10);
             }
 
             // Center of mass.
@@ -80,7 +80,7 @@ var View = function(scene) {
             var edgeVector = cp.edge.getCollisionHelperVariables().edge;
             var sl = this.translateCoords(cp.point.getAbsoluteCoordinates().sub(edgeVector.mul(.1)));
             var el = this.translateCoords(cp.point.getAbsoluteCoordinates().add(edgeVector.mul(.1)));
-            this.context.lineWidth = 3;
+            this.context.lineWidth = 1;
             this.context.strokeStyle = "#ff0000";
             this.context.beginPath();
             this.context.moveTo(sl.x, sl.y);
@@ -100,11 +100,11 @@ var View = function(scene) {
      * @return {Vector}
      */
     this.translateCoords = function(coords) {
-        return new Vector(250 + coords.x * 5, 300 - coords.y * 5);
+        return new Vector(400 + coords.x * 3, 300 - coords.y * 3);
     };
 
     this.container = $('<div></div>');
-    this.canvas = $('<canvas width="500" height="500"></canvas>');
+    this.canvas = $('<canvas width="800" height="600"></canvas>');
     $(this.container).append(this.canvas);
     this.context = this.canvas.get(0).getContext('2d');
 
