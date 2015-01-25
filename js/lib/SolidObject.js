@@ -364,29 +364,30 @@ var SolidObject = function() {
             var pcps = intersection.thisCp.getValidPossibleCollisionPoints(intersection.thatCp, intersection.pcps);
 
             // If none, this collision is invalid.
-            if (pcps.length == 0) {
-                // Return an empty array to indicate that the collision is invalid.
-                return [];
+            if (pcps.length > 0) {
+                // If there are multiple valid pcps, we choose the first one as if it occurs earlier.
+                var pcp = pcps[0];
+                var cp;
+                switch (pcp) {
+                    case 0:
+                        cp = new CollisionPoint(this, intersection.thisCp, that, intersection.thatCp);
+                        break;
+                    case 1:
+                        cp = new CollisionPoint(this, intersection.thisCp.next, that, intersection.thatCp);
+                        break;
+                    case 2:
+                        cp = new CollisionPoint(that, intersection.thatCp, this, intersection.thisCp);
+                        break;
+                    case 3:
+                        cp = new CollisionPoint(that, intersection.thatCp.next, this, intersection.thisCp);
+                        break;
+                }
+                collisionPoints.push(cp);
             }
+        }
 
-            // If there are multiple valid pcps, we choose the first one as if it occurs earlier.
-            var pcp = pcps[0];
-            var cp;
-            switch (pcp) {
-                case 0:
-                    cp = new CollisionPoint(this, intersection.thisCp, that, intersection.thatCp);
-                    break;
-                case 1:
-                    cp = new CollisionPoint(this, intersection.thisCp.next, that, intersection.thatCp);
-                    break;
-                case 2:
-                    cp = new CollisionPoint(that, intersection.thatCp, this, intersection.thisCp);
-                    break;
-                case 3:
-                    cp = new CollisionPoint(that, intersection.thatCp.next, this, intersection.thisCp);
-                    break;
-            }
-            collisionPoints.push(cp);
+        if (collisionPoints.length == 0) {
+            return [];
         }
 
         // Finally, filter double collision points.

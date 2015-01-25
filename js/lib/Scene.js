@@ -65,7 +65,6 @@ var Scene = function() {
         }
 
         // Correct the speeds in the current model.
-
         var t1 = (new Date()).getTime();
         dt = this.speedAdjuster.adjust(dt);
         this.totalAdjustTime += (new Date()).getTime() - t1;
@@ -78,14 +77,21 @@ var Scene = function() {
         this.totalCollisionTime += (new Date()).getTime() - t1;
 
         if (this.frame == 100) {
-            console.log('adjust: ' + this.totalAdjustTime);
-            console.log('collision: ' + this.totalCollisionTime);
+            Scene.log('adjust: ' + this.totalAdjustTime);
+            Scene.log('collision: ' + this.totalCollisionTime);
 //            throw "ready";
         }
 
         if (info == null) {
             this.setT(maxTime);
         } else {
+            // Check again at minT.
+            var result2 = this.getNextCollision(info.t);
+            if (result2 != null) {
+                console.log('double collision: ' + info.collision.toString());
+                info = result2;
+            }
+
             // Go up to the collision time.
             this.setT(info.t);
 
@@ -108,7 +114,6 @@ var Scene = function() {
 
             return info.t - lt;
         }
-
         return maxTime - lt;
     };
 
@@ -153,14 +158,7 @@ var Scene = function() {
         if (minT == null) {
             return null;
         } else {
-            // Check again at minT.
-            var result = this.getNextCollision(minT);
-            if (result == null) {
-                return {t : minT, collision: collisionPoints};
-            } else {
-                console.log('double collision');
-                return result;
-            }
+            return {t : minT, collision: collisionPoints};
         }
     };
 
@@ -202,3 +200,13 @@ Scene.COLLISION_PROXIMITY = .01; // 1cm.
  * @type {number}
  */
 Scene.TIMESTEP = .05;
+
+var output = document.getElementById('output');
+Scene.log = function(msg) {
+    console.log(msg);
+    /*if (!output) {
+        output = document.getElementById('output');
+    }
+    output.innerHTML += msg + "\n";
+    $(output).scrollTop(1000000000);*/
+};

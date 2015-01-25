@@ -296,7 +296,7 @@ var CornerPoint = function(index, coordinates) {
      * Returns the distance of that corner point relative to this edge.
      * @param {CornerPoint} that
      * @return {number}
-     *   The coordinates space works as follows: the start vector of this edge is [0,0] and the end vector is [1,0].
+     *   The distance is returned in absolute distance.
      */
     this.getPointDistanceRelativeToThis = function(that) {
         // Get the absolute coordinates of all points.
@@ -309,7 +309,7 @@ var CornerPoint = function(index, coordinates) {
 
         // Actually perform the calculations.
         var k = u.sub(v1);
-        return v.my.d(k);
+        return v.my.d(k) * this.edgeLength;
     };
 
     /**
