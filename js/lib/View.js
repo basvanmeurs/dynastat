@@ -88,9 +88,16 @@ var View = function(scene) {
             this.context.stroke();
             this.context.lineWidth = 1;
 
+            this.context.strokeStyle = "#000000";
+            this.context.strokeText("" + i, c.x - 5, c.y - 5);
+
             this.context.fillStyle = "#00ff00";
             this.context.fillRect(c.x - 3, c.y - 3, 6, 6);
         }
+
+        this.context.strokeText("" + scene.frame, 20, 20);
+
+        var i;
 
     };
 

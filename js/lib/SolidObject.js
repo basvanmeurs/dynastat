@@ -232,6 +232,8 @@ var SolidObject = function() {
      * @return {CollisionPoint[]}
      *   The collision points at the moment of collision (probably just 1, but in exotic situations there may be more).
      *   An empty array if there was no collision at all.
+     * @post
+     *   Both of the solid objects will be progressed to either maxTime or the collision time.
      */
     this.getCollision = function(that, time, maxTime) {
         var i, intersections;

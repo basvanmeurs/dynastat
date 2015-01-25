@@ -28,6 +28,16 @@ var Vector = function (x, y) {
      * @param {Vector} that
      * @return {Vector}
      */
+    this.iadd = function (that) {
+        this.x += that.x;
+        this.y += that.y;
+        return this;
+    };
+
+    /**
+     * @param {Vector} that
+     * @return {Vector}
+     */
     this.sub = function (that) {
         return new Vector(this.x - that.x, this.y - that.y);
     };

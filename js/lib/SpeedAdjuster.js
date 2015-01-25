@@ -48,13 +48,14 @@ var SpeedAdjuster = function(scene) {
     /**
      * Checks the existing scene and adjust speeds. Deletes collision points that are no longer valid.
      * @param {number} dt
-     *   The max step duration.
-     * @return {number}
-     *   The corrected step duration. This occurs when the rotation speed is high.
+     *   The max step duration. Used for intra-step distance compensation with speed.
      */
     this.adjust = function(dt) {
         var i, c, o1, o2;
         this.counter++;
+
+        this.info = [];
+        this.items = [];
 
         // Remove collision points that have slided away from the collision edge.
         if (this.scene.collisionPoints.length > 0) {
@@ -71,7 +72,6 @@ var SpeedAdjuster = function(scene) {
         }
 
         if (this.scene.collisionPoints.length > 0) {
-            this.info = [];
             for (i = 0; i < this.scene.collisionPoints.length; i++) {
                 // Set physics info object for later use.
                 this.info[i] = this.getCollisionPointInfo(this.scene.collisionPoints[i]);
@@ -109,7 +109,6 @@ var SpeedAdjuster = function(scene) {
             var disabled = 0;
 
             // Use matrix solver to get result.
-            this.items = [];
             for (i = 0; i < this.info.length; i++) {
                 var cp = this.scene.collisionPoints[i];
 
@@ -125,6 +124,7 @@ var SpeedAdjuster = function(scene) {
                 );
 
                 var key = "" + cp.edgeSolidObject.index + "-" + cp.edge.index + "_" + cp.pointSolidObject.index + "-" + cp.point.index;
+                cp.key = key;
                 var time = cp.edgeSolidObject.t;
                 var bounce = false;
                 if (!this.lastCollisionsTimes.hasOwnProperty(key) || (time > this.lastCollisionsTimes[key] + 0.25)) {
@@ -168,20 +168,22 @@ var SpeedAdjuster = function(scene) {
                 this.items.push(item);
             }
 
-            var result = this.matrixSolver.solve(this.items);
+            var result = this.solve();
 
             var recalcNeeded = false;
             for (i = 0; i < this.info.length; i++) {
                 if (result[i] < -1e-6) {
-                    recalcNeeded = true;
                     this.items[i].disabled = true;
                     disabled++;
+                    recalcNeeded = true;
                 }
             }
 
             if (recalcNeeded) {
-                result = this.matrixSolver.solve(this.items);
+                result = this.solve();
+            }
 
+            if (disabled > 0) {
                 for (i = 0; i < this.scene.objects.length; i++) {
                     this.scene.objects[i].setSpeedReset();
                 }
@@ -189,7 +191,7 @@ var SpeedAdjuster = function(scene) {
                 // Apply results.
                 for (i = 0; i < this.info.length; i++) {
                     var r = result[i];
-                    if (!item.disabled && r != 0) {
+                    if (!this.items[i].disabled && r != 0) {
                         this.info[i].o1.speed = this.info[i].o1.speed.add(this.info[i].dv1.mul(r));
                         this.info[i].o2.speed = this.info[i].o2.speed.add(this.info[i].dv2.mul(r));
                         this.info[i].o1.rotationSpeed += this.info[i].dw1 * r;
@@ -202,7 +204,7 @@ var SpeedAdjuster = function(scene) {
                     if (this.items[i].disabled) {
                         // Check if there are collision speed diff problems.
                         var t = this.getCollisionPointSpeedDiff(this.scene.collisionPoints[i], this.info[i]);
-                        if (t < -1e-6) { // Be aware of rounding errors!
+                        if (t < 0) { // Be aware of rounding errors!
                             // Colliding points are moving towards each other.
                             recalcNeeded = true;
                             this.items[i].disabled = false;
@@ -216,11 +218,11 @@ var SpeedAdjuster = function(scene) {
                         this.scene.objects[i].resetSpeed();
                     }
 
-                    result = this.matrixSolver.solve(this.items);
+                    result = this.solve();
 
                     for (i = 0; i < this.info.length; i++) {
                         r = result[i];
-                        if (!item.disabled && r != 0) {
+                        if (!this.items[i].disabled && r != 0) {
                             this.info[i].o1.speed = this.info[i].o1.speed.add(this.info[i].dv1.mul(r));
                             this.info[i].o2.speed = this.info[i].o2.speed.add(this.info[i].dv2.mul(r));
                             this.info[i].o1.rotationSpeed += this.info[i].dw1 * r;
@@ -228,109 +230,43 @@ var SpeedAdjuster = function(scene) {
                         }
                     }
                 }
-            }
-
-            // Bounce-back.
-            dt = this.lookAhead(dt, this.info, this.items);
-
-            if (disabled > 0) {
-                // Remove invalid collision points.
-                var newCollisionPoints = [];
-                for (i = 0; i < this.scene.collisionPoints.length; i++) {
-                    if (!(this.items[i].disabled && (this.info[i].dist > .2) && (!this.lastLookAheadCps.hasOwnProperty(key)))) {
-                        newCollisionPoints.push(this.scene.collisionPoints[i]);
+            } else {
+                // Apply results.
+                for (i = 0; i < this.info.length; i++) {
+                    var r = result[i];
+                    if (!this.items[i].disabled && r != 0) {
+                        this.info[i].o1.speed = this.info[i].o1.speed.add(this.info[i].dv1.mul(r));
+                        this.info[i].o2.speed = this.info[i].o2.speed.add(this.info[i].dv2.mul(r));
+                        this.info[i].o1.rotationSpeed += this.info[i].dw1 * r;
+                        this.info[i].o2.rotationSpeed += this.info[i].dw2 * r;
                     }
                 }
-                this.scene.collisionPoints = newCollisionPoints;
             }
         }
-
-        return dt;
     };
 
     /**
-     * Adjusts the speeds by looking ahead.
-     * @param {number} dt
-     * @param {Object[]} info
-     * @param {Object[]} items
-     * @return {number}
-     *   The corrected step duration. This occurs when the rotation speed is high.
+     * Removes the collision points that have become invalid.
      */
-    this.lookAhead = function(dt, info, items) {
-
-        var i, cp;
-
-        // Clear last look ahead cps.
-        this.lastLookAheadCps = {};
-
-        // Limit dt if necessary. No solid object may rotate more than .5 * PI in 1 frame.
-        for (i = 0; i < scene.collisionPoints.length; i++) {
-            cp = scene.collisionPoints[i];
-            if (cp.rotationSpeed * dt > Math.PI * .5) {
-                dt = Math.PI * .5 / cp.rotationSpeed;
-                Scene.log('limit dt to ' + dt);
+    this.cleanupCollisionPoints = function() {
+        var newCollisionPoints = [];
+        for (var i = 0; i < this.scene.collisionPoints.length; i++) {
+            if (!(this.items[i].disabled && (this.info[i].dist > .2) && (!this.lastLookAheadCps.hasOwnProperty(this.scene.collisionPoints[i].key)))) {
+                newCollisionPoints.push(this.scene.collisionPoints[i]);
             }
         }
+        this.items = null;
+        this.info = null;
+        this.scene.collisionPoints = newCollisionPoints;
+    };
 
-        var step = function(cp, dt) {
-            cp.pointSolidObject.step(dt, true);
-            cp.pointSolidObject.updateCornerPoint(cp.point);
-
-            cp.edgeSolidObject.step(dt, true);
-            cp.edgeSolidObject.updateCornerPoint(cp.edge);
-            cp.edgeSolidObject.updateCornerPoint(cp.edge.next);
-        };
-
-        var peek = function(dt, cp) {
-            cp.pointSolidObject.saveSituation();
-            cp.edgeSolidObject.saveSituation();
-
-            // Step ahead to dt.
-            step(cp, dt);
-
-            // Get y relative to edge.
-            var v = cp.edge.getPointDistanceRelativeToThis(cp.point);
-
-            // Step back.
-            cp.pointSolidObject.resetSituation();
-            cp.edgeSolidObject.resetSituation();
-
-            return v;
-        };
-
-        for (i = 0; i < scene.collisionPoints.length; i++) {
-            cp = scene.collisionPoints[i];
-
-            var dist2 = peek(dt, scene.collisionPoints[i]);
-            if (dist2 < 0) {
-                var delta = dist2 - info[i].dist;
-                if (items[i].disabled) {
-                    // Re-enable point as it's going to collide after all.
-                    items[i].disabled = false;
-                }
-console.log('looking ahed for ' + scene.collisionPoints[i].toString() + ' frame '+ scene.frame);
-                items[i].result = (-delta / dt);
-            } else {
-                items[i].result = 0;
-            }
-        }
-
-        var result = this.matrixSolver.solve(items);
-
-        // Apply results.
-        for (i = 0; i < scene.collisionPoints.length; i++) {
-            if (!items[i].disabled) {
-                var r = result[i];
-                if (r != 0) {
-                    info[i].o1.speed = info[i].o1.speed.add(info[i].dv1.mul(r));
-                    info[i].o2.speed = info[i].o2.speed.add(info[i].dv2.mul(r));
-                    info[i].o1.rotationSpeed += info[i].dw1 * r;
-                    info[i].o2.rotationSpeed += info[i].dw2 * r;
-                }
-            }
-        }
-
-        return dt;
+    /**
+     * Solves the current collision point items using the matrix solver.
+     * @return {Number[]}
+     *   An array with speed applications.
+     */
+    this.solve = function() {
+        return this.matrixSolver.solve(this.items);
     };
 
     /**
@@ -498,6 +434,7 @@ var MatrixSolver = function(nEdges) {
         // Initialize item objects.
         n = items.length;
         for (i = 0; i < n; i++) {
+
             items[i].rowNonZeroes = items[i].sideEffects.map(function(a) {
                 return a.index;
             }).filter(function(b) {
@@ -524,7 +461,7 @@ var MatrixSolver = function(nEdges) {
             temp.push({index: i, n: items[i].sideEffects.length});
         }
         var solveOrder = temp.sort(function(a,b) {return a.n - b.n}).map(function(a) {return a.index});
-        solveOrder.filter(function(index) {return !items[index].disabled});
+        solveOrder = solveOrder.filter(function(index) {return !items[index].disabled});
 
         o = solveOrder.length;
         for (i = 0; i < o; i++) {
