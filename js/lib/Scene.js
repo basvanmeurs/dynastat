@@ -52,10 +52,7 @@ var Scene = function() {
 
     this.play = function() {
 
-        var t = (new Date()).getTime();
         var latestDt = this.step(Scene.TIMESTEP);
-        var t2 = (new Date()).getTime();
-        maxDuration = Math.max(t2 - t, maxDuration);
 
         if (latestDt < Scene.TIMESTEP * .5) {
             // Try to do another step because the gained time was very small.

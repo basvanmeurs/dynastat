@@ -33,7 +33,7 @@ var View = function(scene) {
      * Updates the canvas.
      */
     this.update = function() {
-        this.context.clearRect(0, 0, 1000, 1000);
+        this.context.clearRect(0, 0, this.width, this.height);
         this.context.strokeStyle = '#000000';
 
         var collisions = [];
@@ -107,11 +107,14 @@ var View = function(scene) {
      * @return {Vector}
      */
     this.translateCoords = function(coords) {
-        return new Vector(400 + coords.x * 3, 300 - coords.y * 3);
+        return new Vector(this.width * .5 + coords.x * 6, this.height *.75 - coords.y * 6);
     };
 
+    this.width = $(window).width();
+    this.height = $(window).height();
+
     this.container = $('<div></div>');
-    this.canvas = $('<canvas width="800" height="600"></canvas>');
+    this.canvas = $('<canvas width="' + this.width + '" height="' + this.height + '"></canvas>');
     $(this.container).append(this.canvas);
     this.context = this.canvas.get(0).getContext('2d');
 

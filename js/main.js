@@ -58,17 +58,17 @@ var initScene = function(scene) {
     obj.inertia = 10000;
     scene.addObject(obj);
 
-/*    obj = new SolidObject();
+    obj = new SolidObject();
     obj.init(
         scene,
         1e12,
         new Vector(-45, 13),
-        [new Vector(-17, 1), new Vector(0, 5), new Vector(17, 1), new Vector(17, -1), new Vector(0, -5), new Vector(-17, -1)]
+        [new Vector(-17, 1), new Vector(0, 3), new Vector(17, 1), new Vector(17, -1), new Vector(0, -3), new Vector(-17, -1)]
     );
     obj.rotationSpeed = 2 * Math.PI;
     obj.inertia = 10000000;
     scene.addObject(obj);
-*/
+
     obj = new SolidObject();
     obj.init(
         scene,
@@ -83,7 +83,7 @@ var initScene = function(scene) {
 
 
     scene.stepCallback = function(object, dt) {
-        if (object.index < scene.objects.length - 1) {
+        if (object.index < scene.objects.length - 2) {
             //object.addSpeed(object.speed.x * -.01 * dt, object.speed.y * -.01 * dt, object.rotationSpeed * -.01);
             object.addSpeed(0, -9.81 * dt, 0);
         }
