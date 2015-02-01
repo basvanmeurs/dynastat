@@ -113,7 +113,7 @@ var SpeedAdjuster = function(scene) {
                 var cp = this.scene.collisionPoints[i];
 
                 // Get vd.
-                var vd = this.getCollisionSpeedDiff(
+                var vd = this.getNormalSpeedDiff(
                     cp.edgeSolidObject.speed,
                     cp.edgeSolidObject.rotationSpeed,
                     this.info[i].r1,
@@ -158,13 +158,18 @@ var SpeedAdjuster = function(scene) {
                     } else {
                         d = -vd;
                     }
+
+                    // Make sure that rounding errors will not cause an infinite collision by always applying a minimal extra push.
+                    d -= 1e-10;
                 }
 
-                var item = {result: d, sideEffects: this.info[i].sideEffects};
-                if (d < -1e-6) {
-                    item.disabled = true;
+                var item = {vd: vd, result: d, sideEffects: this.info[i].sideEffects};
+
+                if (d < 0) {
                     disabled++;
+                    item.disabled = true;
                 }
+
                 this.items.push(item);
             }
 
@@ -199,37 +204,40 @@ var SpeedAdjuster = function(scene) {
                     }
                 }
 
-                recalcNeeded = false;
-                for (i = 0; i < this.info.length; i++) {
-                    if (this.items[i].disabled) {
-                        // Check if there are collision speed diff problems.
-                        var t = this.getCollisionPointSpeedDiff(this.scene.collisionPoints[i], this.info[i]);
-                        if (t < 0) { // Be aware of rounding errors!
-                            // Colliding points are moving towards each other.
-                            recalcNeeded = true;
-                            this.items[i].disabled = false;
-                        }
-                    }
-                }
-
-                if (recalcNeeded) {
-                    // Reset speeds, and recalc with enabled collision points.
-                    for (i = 0; i < this.scene.objects.length; i++) {
-                        this.scene.objects[i].resetSpeed();
-                    }
-
-                    result = this.solve();
-
+                do {
+                    // Disabled points may come back in multiple runs.
+                    recalcNeeded = false;
                     for (i = 0; i < this.info.length; i++) {
-                        r = result[i];
-                        if (!this.items[i].disabled && r != 0) {
-                            this.info[i].o1.speed = this.info[i].o1.speed.add(this.info[i].dv1.mul(r));
-                            this.info[i].o2.speed = this.info[i].o2.speed.add(this.info[i].dv2.mul(r));
-                            this.info[i].o1.rotationSpeed += this.info[i].dw1 * r;
-                            this.info[i].o2.rotationSpeed += this.info[i].dw2 * r;
+                        if (this.items[i].disabled) {
+                            // Check if there are collision speed diff problems.
+                            var t = this.getCollisionPointSpeedDiff(this.scene.collisionPoints[i], this.info[i]);
+                            if (t < 0) {
+                                // Colliding points are moving towards each other.
+                                recalcNeeded = true;
+                                this.items[i].disabled = false;
+                            }
                         }
                     }
-                }
+
+                    if (recalcNeeded) {
+                        // Reset speeds, and recalc with enabled collision points.
+                        for (i = 0; i < this.scene.objects.length; i++) {
+                            this.scene.objects[i].resetSpeed();
+                        }
+
+                        result = this.solve();
+
+                        for (i = 0; i < this.info.length; i++) {
+                            r = result[i];
+                            if (!this.items[i].disabled && r != 0) {
+                                this.info[i].o1.speed = this.info[i].o1.speed.add(this.info[i].dv1.mul(r));
+                                this.info[i].o2.speed = this.info[i].o2.speed.add(this.info[i].dv2.mul(r));
+                                this.info[i].o1.rotationSpeed += this.info[i].dw1 * r;
+                                this.info[i].o2.rotationSpeed += this.info[i].dw2 * r;
+                            }
+                        }
+                    }
+                } while(recalcNeeded);
             } else {
                 // Apply results.
                 for (i = 0; i < this.info.length; i++) {
@@ -241,6 +249,84 @@ var SpeedAdjuster = function(scene) {
                         this.info[i].o2.rotationSpeed += this.info[i].dw2 * r;
                     }
                 }
+            }
+
+            this.applyFriction(result);
+        }
+    };
+
+    /**
+     * Applies friction.
+     * @param {number[]} pushSpeeds
+     *   The amount of m/s that the edge and point were pushed away (results in the speed adjuster).
+     */
+    this.applyFriction = function(pushSpeeds) {
+        // Calculate friction.
+        for (var i = 0; i < pushSpeeds.length; i++) {
+            var cp = this.scene.collisionPoints[i];
+
+            if (pushSpeeds[i] > 0) {
+                // How much impulse was applied on the collision point to counter the collision?
+                var p = pushSpeeds[i] * this.info[i].impulsePerSpeedDiff;
+
+                // Scale to friction impulse using a constant (this could depend on the edge and point materials, but for now it is always the same).
+                var frictionImpulse = p * .2;
+
+                // Get perpendicular collision edge normal (for friction calculations).
+                var nPerp = this.info[i].n.getPerp();
+
+                // Get perpendicular speed difference on the collision edge.
+                var vd = this.getNormalSpeedDiff(
+                    cp.edgeSolidObject.speed,
+                    cp.edgeSolidObject.rotationSpeed,
+                    this.info[i].r1,
+                    cp.pointSolidObject.speed,
+                    cp.pointSolidObject.rotationSpeed,
+                    this.info[i].r2,
+                    nPerp
+                );
+
+                if (vd > 0) {
+                    // Change direction of frictionImpulse.
+                    frictionImpulse = -frictionImpulse;
+                }
+
+                // Get the speed effect per 1 unit of moment of applied friction.
+                var mDv1Perp = nPerp.mul(-1 / cp.edgeSolidObject.mass);
+                var mDv2Perp = nPerp.mul(1 / cp.pointSolidObject.mass);
+                var mDw1Perp = -this.info[i].r1.crossProduct(nPerp) / cp.edgeSolidObject.inertia;
+                var mDw2Perp = this.info[i].r2.crossProduct(nPerp) / cp.pointSolidObject.inertia;
+
+                // Get the vd netto result of 1 unit of moment of applied friction.
+                var vdNetto = ((mDv2Perp.add(this.info[i].r2.getPerp().mul(mDw2Perp))).d(nPerp) - (mDv1Perp.add(this.info[i].r1.getPerp().mul(mDw1Perp))).d(nPerp));
+
+                // Check if the friction effect causes a change in speed direction.
+                if (vd > 0) {
+                    if (vdNetto * frictionImpulse < -vd) {
+                        // Yes it does! Limit the friction to get equal speeds.
+                        frictionImpulse = -vd / vdNetto;
+                    }
+                } else {
+                    if (vdNetto * frictionImpulse > -vd) {
+                        // Yes it does! Limit the friction to get equal speeds.
+                        frictionImpulse = -vd / vdNetto;
+                    }
+                }
+
+                frictionImpulse = Math.min(frictionImpulse, 300);
+
+                // Apply the friction impulse on both solid objects.
+                cp.edgeSolidObject.applyImpulseAbsolute(
+                    cp.point.getAbsoluteCoordinates(),
+                    nPerp,
+                    -frictionImpulse
+                );
+
+                cp.pointSolidObject.applyImpulseAbsolute(
+                    cp.point.getAbsoluteCoordinates(),
+                    nPerp,
+                    frictionImpulse
+                );
             }
         }
     };
@@ -277,11 +363,11 @@ var SpeedAdjuster = function(scene) {
      * @returns {number}
      */
     this.getCollisionPointSpeedDiff = function(cp, info) {
-        return this.getCollisionSpeedDiff(cp.edgeSolidObject.speed, cp.edgeSolidObject.rotationSpeed, info.r1, cp.pointSolidObject.speed, cp.pointSolidObject.rotationSpeed, info.r2, info.n);
+        return this.getNormalSpeedDiff(cp.edgeSolidObject.speed, cp.edgeSolidObject.rotationSpeed, info.r1, cp.pointSolidObject.speed, cp.pointSolidObject.rotationSpeed, info.r2, info.n);
     };
 
     /**
-     * Returns the collision speed difference.
+     * Returns the speed difference between both solid objects relative to the normal.
      * @param {Vector} v1
      *   Linear speed of solid object 1.
      * @param {Number} w1
@@ -295,11 +381,11 @@ var SpeedAdjuster = function(scene) {
      * @param {Vector} r2
      *   Distance of CM of so 2 to collision point.
      * @param {Vector} n
-     *   The collision normal.
+     *   The speed diff normal.
      * @returns {number}
-     *   The collision speed difference. Negative is towards each other (hit), positive is away from each other.
+     *   The speed difference. Negative is 1 moving towards 2 (and vice versa), positive is 1 moving away from 2.
      */
-    this.getCollisionSpeedDiff = function(v1, w1, r1, v2, w2, r2, n) {
+    this.getNormalSpeedDiff = function(v1, w1, r1, v2, w2, r2, n) {
         // Calculate current speeds at collision point.
         var v1AtCp = v1.add(r1.getPerp().mul(w1));
         var v2AtCp = v2.add(r2.getPerp().mul(w2));
@@ -350,10 +436,11 @@ var SpeedAdjuster = function(scene) {
         dw1 *= j;
         dw2 *= j;
 
+        // Get distance between point and edge.
         var dist = e.getPointDistanceRelativeToThis(p);
 
         // Return physics info about the collision.
-        return {o1: o1, o2: o2, dv1: dv1, dv2: dv2, dw1: dw1, dw2: dw2, r1: r1, r2: r2, n: n, dist: dist};
+        return {o1: o1, o2: o2, dv1: dv1, dv2: dv2, dw1: dw1, dw2: dw2, r1: r1, r2: r2, n: n, dist: dist, impulsePerSpeedDiff: j};
     };
 
     // Creates a new matrix solver for at most 100 collision points.
@@ -450,7 +537,9 @@ var MatrixSolver = function(nEdges) {
                 m = items[i].sideEffects.length;
                 for (j = 0; j < m; j++) {
                     fx = items[i].sideEffects[j];
-                    this.matrix[fx.index][i] = fx.effect;
+                    if (!items[fx.index].disabled) {
+                        this.matrix[fx.index][i] = fx.effect;
+                    }
                 }
             }
         }
@@ -468,69 +557,81 @@ var MatrixSolver = function(nEdges) {
             var index = solveOrder[i];
             var item = items[index];
 
-            // Get all unique non-zero row indices.
-            (function(index) {
-                item.rowNonZeroes = self.getUniqueValues(item.rowNonZeroes).filter(
-                    function(a) {
-                        return self.matrix[index][a] != 0;
-                    }
-                );
-
-                // Get all unique non-zero column indices.
-                item.colNonZeroes = self.getUniqueValues(item.colNonZeroes).filter(
-                    function(a) {
-                        return self.matrix[a][index] != 0;
-                    }
-                );
-            })(index);
-
-            // Normalize row so that pivot is 1.
-            if (this.matrix[index][index] != 1) {
-                if (this.matrix[index][index] == 0) {
-                    // This is a strange situation that can occur. The effect would be for v to be very high.
-                    v = 100;
-                } else {
-                    v = 1 / this.matrix[index][index];
-                    if (v > 100) {
-                        v = 100;
-                    }
-                    if (v < -100) {
-                        v = -100;
-                    }
-                }
+            if (this.matrix[index][index] < 1e-10 && this.matrix[index][index] > -1e-10) {
+                // The matrix must have multiple solutions, and this item is a variable. Just choose 0 and continue.
                 this.matrix[index][index] = 1;
-                n = item.rowNonZeroes.length;
-                for (j = 0; j < n; j++) {
-                    this.matrix[index][item.rowNonZeroes[j]] *= v;
+                item.result = 0;
+                m = item.rowNonZeroes.length;
+                for (j = 0; j < m; j++) {
+                    index2 = item.rowNonZeroes[j];
+                    this.matrix[index][index2] = 0;
                 }
-                item.result *= v;
+                m = item.colNonZeroes.length;
+                for (j = 0; j < m; j++) {
+                    index2 = item.colNonZeroes[j];
+                    this.matrix[index2][index] = 0;
+                }
+            } else {
+                // Get all unique non-zero row indices.
+                (function(index) {
+                    item.rowNonZeroes = self.getUniqueValues(item.rowNonZeroes).filter(
+                        function(a) {
+                            return self.matrix[index][a] != 0;
+                        }
+                    );
+
+                    // Get all unique non-zero column indices.
+                    item.colNonZeroes = self.getUniqueValues(item.colNonZeroes).filter(
+                        function(a) {
+                            return self.matrix[a][index] != 0;
+                        }
+                    );
+                })(index);
+
+                // Normalize row so that pivot is 1.
+                if (this.matrix[index][index] != 1) {
+                    v = 1 / this.matrix[index][index];
+                    this.matrix[index][index] = 1;
+                    n = item.rowNonZeroes.length;
+                    for (j = 0; j < n; j++) {
+                        this.matrix[index][item.rowNonZeroes[j]] *= v;
+                    }
+                    item.result *= v;
+                }
+
+                // Add this row to all other rows that have this item, so that the other column cells only contains zeroes.
+                n = item.colNonZeroes.length;
+                for (j = 0; j < n; j++) {
+                    var index2 = item.colNonZeroes[j];
+
+                    // Manage rowNonZeroes and colNonZoroes.
+                    // Notice that this might add duplicates, but these will be filtered out when the row is solved.
+                    m = item.rowNonZeroes.length;
+                    for (k = 0; k < m; k++) {
+                        var index3 = item.rowNonZeroes[k];
+                        if ((index2 != index3) && (this.matrix[index2][index3] == 0)) {
+                            items[index2].rowNonZeroes.push(index3);
+                            items[index3].colNonZeroes.push(index2);
+                        }
+                    }
+
+                    // Make sure that the column cell is 0 by applying the item row.
+                    v = this.matrix[index2][index];
+
+                    this.matrix[index2][index] = 0;
+                    m = item.rowNonZeroes.length;
+                    for (k = 0; k < m; k++) {
+                        var index3 = item.rowNonZeroes[k];
+                        this.matrix[index2][index3] -= v * this.matrix[index][index3];
+                    }
+                    items[index2].result -= v * item.result;
+                }
             }
 
-            // Add this row to all other rows that have this item, so that the other column cells only contains zeroes.
-            n = item.colNonZeroes.length;
-            for (j = 0; j < n; j++) {
-                var index2 = item.colNonZeroes[j];
-
-                // Manage rowNonZeroes and colNonZoroes.
-                // Notice that this might add duplicates, but these will be filtered out when the row is solved.
-                m = item.rowNonZeroes.length;
-                for (k = 0; k < m; k++) {
-                    var index3 = item.rowNonZeroes[k];
-                    if (this.matrix[index2][index3] == 0) {
-                        items[index2].rowNonZeroes.push(index3);
-                        items[index3].colNonZeroes.push(index2);
-                    }
+            for (k = 0; k < items.length; k++) {
+                if (this.matrix[k][index] != (k == index ? 1 : 0)) {
+                    throw "bad!";
                 }
-
-                // Make sure that the column cell is 0 by applying the item row.
-                v = this.matrix[index2][index];
-                this.matrix[index2][index] = 0;
-                m = item.rowNonZeroes.length;
-                for (k = 0; k < m; k++) {
-                    var index3 = item.rowNonZeroes[k];
-                    this.matrix[index2][index3] -= v * this.matrix[index][index3];
-                }
-                items[index2].result -= v * item.result;
             }
         }
 

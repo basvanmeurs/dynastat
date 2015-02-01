@@ -481,6 +481,18 @@ var SolidObject = function() {
     };
 
     /**
+     * Returns the relative object coordinates for the absolute world coordinates.
+     * @param {Vector} coordinates
+     * @return {Vector}
+     */
+    this.getRelativeCoordinates = function(coordinates) {
+        var v = this.getRotationCosSin();
+        var dx = coordinates.x - this.position.x;
+        var dy = coordinates.y - this.position.y;
+        return new Vector(dx * v.cos + dy * v.sin, -dx * v.sin + dy * v.cos);
+    };
+
+    /**
      * Initializes the object with the specified data.
      * @param {Scene} scene
      * @param {number} mass
@@ -538,7 +550,7 @@ var SolidObject = function() {
      * @param {Vector} coords
      *   Coords relative to the unrotated solid object layout.
      * @param {Vector} n
-     *   The direction (normal) of the applied impulse.
+     *   The direction (normal) of the applied impulse (relative).
      * @param {Number} impulse
      *   The impulse in kg * m/s.
      */
@@ -553,4 +565,18 @@ var SolidObject = function() {
         this.addSpeed(dv.x, dv.y, dw);
     };
 
+    /**
+     * Applies the specified impulse at the specified point in the absolute object space.
+     * @param {Vector} coords
+     *   Absolute coords.
+     * @param {Vector} n
+     *   The direction (normal) of the applied impulse (absolute).
+     * @param {Number} impulse
+     *   The impulse in kg * m/s.
+     */
+    this.applyImpulseAbsolute = function(coords, n, impulse) {
+        var relCoords = this.getRelativeCoordinates(coords);
+        var relN = n.rotate(-this.rotation);
+        this.applyImpulse(relCoords, relN, impulse);
+    };
 };

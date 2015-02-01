@@ -38,7 +38,7 @@ var View = function(scene) {
 
         var collisions = [];
 
-        this.context.font = "8px Courier";
+        this.context.font = "12px Courier";
         for (var i = 0; i < this.scene.objects.length; i++) {
             var obj = this.scene.objects[i];
 
@@ -78,21 +78,24 @@ var View = function(scene) {
             c = this.translateCoords(c);
 
             var edgeVector = cp.edge.getCollisionHelperVariables().edge;
-            var sl = this.translateCoords(cp.point.getAbsoluteCoordinates().sub(edgeVector.mul(.1)));
-            var el = this.translateCoords(cp.point.getAbsoluteCoordinates().add(edgeVector.mul(.1)));
-            this.context.lineWidth = 1;
-            this.context.strokeStyle = "#ff0000";
-            this.context.beginPath();
-            this.context.moveTo(sl.x, sl.y);
-            this.context.lineTo(el.x, el.y);
-            this.context.stroke();
-            this.context.lineWidth = 1;
-
-            this.context.strokeStyle = "#000000";
-            this.context.strokeText("" + i, c.x - 5, c.y - 5);
 
             this.context.fillStyle = "#00ff00";
             this.context.fillRect(c.x - 3, c.y - 3, 6, 6);
+
+            this.context.strokeStyle = "#000000";
+            var d = edgeVector.getPerp().mul(-20 / Math.sqrt(edgeVector.d(edgeVector)));
+            d.y = -d.y;
+
+            var e = c.add(d);
+            this.context.lineWidth = 2;
+            this.context.strokeStyle = "#ff0000";
+            this.context.beginPath();
+            this.context.moveTo(c.x, c.y);
+            this.context.lineTo(e.x, e.y);
+            this.context.stroke();
+            this.context.lineWidth = 1;
+
+            this.context.strokeText("" + i, c.x + d.x, c.y + d.y);
         }
 
         this.context.strokeText("" + scene.frame, 20, 20);

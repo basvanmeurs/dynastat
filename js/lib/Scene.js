@@ -70,7 +70,7 @@ var Scene = function() {
      */
     this.step = function(dt) {
         this.frame++;
-
+this.view.update();
         var i;
 
         // Apply speeds added during the last run.
@@ -134,13 +134,13 @@ var Scene = function() {
             recursionCounter++;
 
             var compensated = false;
-            if (dt > Scene.TIMESTEP * .25) {
+            if (dt > Scene.TIMESTEP * .5) {
                 // Look-ahead for current collision points.
                 compensated = this.progressCollisionPoints(dt);
             }
             if (compensated) {
                 // Decrease the possibility of under-compensation by decreasing the time step.
-                dt *= .7;
+                dt *= .8;
             } else {
                 // Detect collision.
                 var maxTime = this.t + dt;
