@@ -301,7 +301,6 @@ var CornerPoint = function(index, coordinates) {
     this.getPointDistanceRelativeToThis = function(that) {
         // Get the absolute coordinates of all points.
         var v1 = this.absoluteCoordinates;
-        var v2 = this.next.absoluteCoordinates;
         var u = that.absoluteCoordinates;
 
         // We use pre-calculated collision helper variables for performance reasons.

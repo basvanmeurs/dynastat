@@ -104,11 +104,19 @@ var SolidObject = function() {
      *   y-acceleration of the cm.
      * @param {number} rot
      *   rotational acceleration.
+     * @param {Boolean} direct
+     *   If not direct, the speed addition will be postponed until the next call to applyAddedSpeed.
      */
-    this.addSpeed = function(x, y, rot) {
-        this.addedSpeed.x += x;
-        this.addedSpeed.y += y;
-        this.addedRotationSpeed += rot;
+    this.addSpeed = function(x, y, rot, direct) {
+        if (direct) {
+            this.speed.x += x;
+            this.speed.y += y;
+            this.rotationSpeed += rot;
+        } else {
+            this.addedSpeed.x += x;
+            this.addedSpeed.y += y;
+            this.addedRotationSpeed += rot;
+        }
     };
 
     /**
@@ -137,7 +145,7 @@ var SolidObject = function() {
      * @see setSpeedReset.
      */
     this.resetSpeed = function() {
-        this.speed = this.speedResetData[0];
+        this.speed = this.speedResetData[0].clone();
         this.rotationSpeed = this.speedResetData[1];
     };
 
@@ -149,16 +157,20 @@ var SolidObject = function() {
             cps[i] = [this.cornerPoints[i].absoluteCoordinates.clone(), this.cornerPoints[i].collisionHelperVariables]
         }
         this.savedSituation.push(cps);
+        return this.savedSituation;
     };
 
-    this.resetSituation = function() {
-        this.t = this.savedSituation[0];
-        this.position = this.savedSituation[1];
-        this.rotation = this.savedSituation[2];
-        this.boundingBox = this.savedSituation[3];
-        this.rotationCosSin = this.savedSituation[4];
+    this.resetSituation = function(situation) {
+        if (!situation) {
+            situation = this.savedSituation;
+        }
+        this.t = situation[0];
+        this.position = situation[1];
+        this.rotation = situation[2];
+        this.boundingBox = situation[3];
+        this.rotationCosSin = situation[4];
 
-        var cps = this.savedSituation[5];
+        var cps = situation[5];
         for (var i = 0; i < cps.length; i++) {
             this.cornerPoints[i].absoluteCoordinates = cps[i][0];
             this.cornerPoints[i].collisionHelperVariables = cps[i][1];
@@ -553,8 +565,10 @@ var SolidObject = function() {
      *   The direction (normal) of the applied impulse (relative).
      * @param {Number} impulse
      *   The impulse in kg * m/s.
+     * @param {Boolean} direct
+     *   If not direct, the speed addition will be postponed until the next call to applyAddedSpeed.
      */
-    this.applyImpulse = function(coords, n, impulse) {
+    this.applyImpulse = function(coords, n, impulse, direct) {
         // Calculate rotational effect.
         var dw = coords.getPerp().d(n) * (impulse / this.inertia);
 
@@ -562,7 +576,7 @@ var SolidObject = function() {
         var dv = n.rotate(this.rotation).mul(impulse / this.mass);
 
         // Add speed upon next round.
-        this.addSpeed(dv.x, dv.y, dw);
+        this.addSpeed(dv.x, dv.y, dw, direct);
     };
 
     /**
@@ -573,10 +587,12 @@ var SolidObject = function() {
      *   The direction (normal) of the applied impulse (absolute).
      * @param {Number} impulse
      *   The impulse in kg * m/s.
+     * @param {Boolean} direct
+     *   If not direct, the speed addition will be postponed until the next call to applyAddedSpeed.
      */
-    this.applyImpulseAbsolute = function(coords, n, impulse) {
+    this.applyImpulseAbsolute = function(coords, n, impulse, direct) {
         var relCoords = this.getRelativeCoordinates(coords);
         var relN = n.rotate(-this.rotation);
-        this.applyImpulse(relCoords, relN, impulse);
+        this.applyImpulse(relCoords, relN, impulse, direct);
     };
 };

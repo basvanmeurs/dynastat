@@ -70,8 +70,6 @@ var Scene = function() {
      */
     this.step = function(dt) {
         this.frame++;
-this.view.update();
-        var i;
 
         // Apply speeds added during the last run.
         for (i = 0; i < this.objects.length; i++) {
@@ -79,19 +77,16 @@ this.view.update();
         }
 
         // Correct the speeds in the current model.
-        this.speedAdjuster.adjust(dt);
+        dt = this.speedAdjuster.adjust(dt);
 
         // Progress the model.
         var info = this.progress(dt);
-
-        // Clean up collision points.
-        this.speedAdjuster.cleanupCollisionPoints();
 
         // Go up to the progress time.
         this.setT(this.t + info.dt);
 
         // Add the newly found collision points.
-        for (i = 0; i < info.collisions.length; i++) {
+        for (var i = 0; i < info.collisions.length; i++) {
             // Remove duplicates in collision points.
             var exists = false;
             for (var j = 0; j < this.collisionPoints.length; j++) {
@@ -116,16 +111,7 @@ this.view.update();
      *   Information about the progress end time step and possible occurring collisions.
      */
     this.progress = function(dt) {
-        var i, j, cp;
-
-        // No colliding solid object may rotate more than .5 * PI in 1 frame.
-        for (i = 0; i < scene.collisionPoints.length; i++) {
-            cp = scene.collisionPoints[i];
-            if (cp.rotationSpeed * dt > Math.PI * .5) {
-                dt = Math.PI * .5 / cp.rotationSpeed;
-                Scene.log('limit dt to ' + dt);
-            }
-        }
+        var i, j;
 
         var foundCollisionPoints = [];
 
@@ -133,137 +119,40 @@ this.view.update();
         while(true) {
             recursionCounter++;
 
-            var compensated = false;
-            if (dt > Scene.TIMESTEP * .5) {
-                // Look-ahead for current collision points.
-                compensated = this.progressCollisionPoints(dt);
-            }
-            if (compensated) {
-                // Decrease the possibility of under-compensation by decreasing the time step.
-                dt *= .8;
-            } else {
-                // Detect collision.
-                var maxTime = this.t + dt;
-                var minT = null;
-                var collisionPoints;
-
-                for (i = 0; i < this.objects.length; i++) {
-                    for (j = i + 1; j < this.objects.length; j++) {
-                        var cps =  this.objects[i].getCollision(this.objects[j], this.t, maxTime);
-                        if (cps.length > 0) {
-                            if ((minT == null) || (this.objects[i].t < minT)) {
-                                collisionPoints = cps;
-                                minT = this.objects[i].t;
-                            }
+            // Detect collision.
+            var maxTime = this.t + dt;
+            var minT = null;
+            var collisionPoints;
+            for (i = 0; i < this.objects.length; i++) {
+                for (j = i + 1; j < this.objects.length; j++) {
+                    var cps =  this.objects[i].getCollision(this.objects[j], this.t, maxTime);
+                    if (cps.length > 0) {
+                        if ((minT == null) || (this.objects[i].t < minT)) {
+                            collisionPoints = cps;
+                            minT = this.objects[i].t;
                         }
                     }
                 }
+            }
+            if (minT == null) {
+                // No (new) collisions found: we're done!
+                return {dt: dt, collisions: foundCollisionPoints};
+            } else {
+                // A collision was found. Limit dt to that.
+                dt = minT - this.t;
 
-                if (minT == null) {
-                    // No (new) collisions found: we're done!
-                    return {dt: dt, collisions: foundCollisionPoints};
-                } else {
-                    // A collision was found. Limit dt to that.
-                    dt = minT - this.t;
-
-                    // Reset all solid objects to the 'starting' time again.
-                    for (i = 0; i < this.objects.length; i++) {
-                        this.objects[i].setT(this.t);
-                    }
-
-                    // Remember last collision.
-                    foundCollisionPoints = collisionPoints;
+                // Reset all solid objects to the 'starting' time again.
+                for (i = 0; i < this.objects.length; i++) {
+                    this.objects[i].setT(this.t);
                 }
+
+                // Remember last collision.
+                foundCollisionPoints = collisionPoints;
             }
         };
         return {dt: dt, collisions: []};
     };
 
-    /**
-     * Checks if any of the collision points has penetrated the edge @maxTime and correct speeds to prevent this from
-     * happening.
-     * @param dt
-     *   The time step to progress to.
-     * @return {Boolean}
-     *   True if correction was necessary.
-     */
-    this.progressCollisionPoints = function(dt) {
-
-        var i, cp;
-        
-        var sa = this.speedAdjuster;
-        
-        // Check which points need compensation.
-        var compensationNecessary = false;
-        for (i = 0; i < scene.collisionPoints.length; i++) {
-            cp = scene.collisionPoints[i];
-
-            var dist2 = this.progressCollisionPointPeek(cp, dt);
-            if (dist2 < 0) {
-                compensationNecessary = true;
-                var delta = dist2 - sa.info[i].dist;
-                if (sa.items[i].disabled) {
-                    // Re-enable point as it's going to collide after all.
-                    sa.items[i].disabled = false;
-                }
-                sa.items[i].result = (-delta / dt);
-            } else {
-                sa.items[i].result = 0;
-            }
-        }
-        
-        if (compensationNecessary) {
-            var result = sa.solve();
-            
-            // Apply results.
-            for (i = 0; i < scene.collisionPoints.length; i++) {
-                if (!sa.items[i].disabled) {
-                    var r = result[i];
-                    if (r != 0) {
-                        sa.info[i].o1.speed.iadd(sa.info[i].dv1.mul(r));
-                        sa.info[i].o2.speed.iadd(sa.info[i].dv2.mul(r));
-                        sa.info[i].o1.rotationSpeed += sa.info[i].dw1 * r;
-                        sa.info[i].o2.rotationSpeed += sa.info[i].dw2 * r;
-                    }
-                }
-            }
-        }
-
-        return compensationNecessary;
-    };
-
-    /**
-     * Peeks into the future and returns the distance between the collision point and the collision edge.
-     * @param {CollisionPoint} cp
-     *   The collision point to 'peek' for.
-     * @param dt
-     *   The amount of time to 'step'.
-     * @returns {number}
-     *   This distance, in m. Negative means that the cp has penetrated the edge.
-     */
-    this.progressCollisionPointPeek = function(cp, dt) {
-        // Remember current situation.
-        cp.pointSolidObject.saveSituation();
-        cp.edgeSolidObject.saveSituation();
-
-        // Step ahead to dt.
-        cp.pointSolidObject.step(dt, true);
-        cp.pointSolidObject.updateCornerPoint(cp.point);
-
-        cp.edgeSolidObject.step(dt, true);
-        cp.edgeSolidObject.updateCornerPoint(cp.edge);
-        cp.edgeSolidObject.updateCornerPoint(cp.edge.next);
-
-        // Get y relative to edge.
-        var v = cp.edge.getPointDistanceRelativeToThis(cp.point);
-
-        // Step back.
-        cp.pointSolidObject.resetSituation();
-        cp.edgeSolidObject.resetSituation();
-
-        return v;
-    };
-    
     /**
      * Sets the time. The time can't be reversed after this because speeds have been applied.
      * @param {Number} t
@@ -303,7 +192,7 @@ Scene.COLLISION_PROXIMITY = .01; // 1cm.
  * The time step per iteration.
  * @type {number}
  */
-Scene.TIMESTEP = .05;
+Scene.TIMESTEP = .01;
 
 var output = document.getElementById('output');
 Scene.log = function(msg) {
