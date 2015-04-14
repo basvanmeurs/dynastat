@@ -150,7 +150,7 @@ var SpeedAdjuster = function(scene) {
     this.getCollisionPointGroups = function() {
         var i,j;
         var groups = [];
-return [this.info];
+
         var n = this.info.length;
 
         if (n == 0) {
@@ -336,12 +336,12 @@ SpeedAdjusterGroup.prototype.getSolverItems = function() {
         this.speedAdjuster.lastCollisionsTimes[key] = time;
 
         var d;
-        if (false && bounce) {
+        if (bounce) {
             d = vd * -1.2;
         } else {
             // In case that there is a distance between the edge and the point, let some of the speed
             // remain so that the distance will decrease.
-            if (false && this.info[i].dist > .1 * Scene.COLLISION_PROXIMITY) {
+            if (this.info[i].dist > .1 * Scene.COLLISION_PROXIMITY) {
 
                 // Get required speed in order to compensate during dt timeframe.
                 var s = (.1 * Scene.COLLISION_PROXIMITY - this.info[i].dist) / this.speedAdjuster.frameDt;
@@ -384,16 +384,88 @@ SpeedAdjusterGroup.prototype.adjust = function() {
     this.solve(items);
 
     // Detect extreme solutions.
+    //@todo: detect chains instead of all.
     var solution = this.speedAdjuster.staticSolverEngine.getSolution();
+    var extremeSolutions = false;
+    for (i = 0; i < solution.length; i++) {
+        if (solution[i] < -1e3 || solution[i] > 1e3) {
+            extremeSolutions = true;
+            break;
+        }
+    }
+
+    if (extremeSolutions) {
+        // Damp mass for this frame to prevent mayhem.
+console.log('damping masses in frame ' + scene.frame);
+        // @todo: detect chains instead of all.
+
+        // Get all objects.
+        var allObjects = [];
+        for (i = 0; i < this.info.length; i++) {
+            if (allObjects.indexOf(this.info[i].o1) == -1) {
+                allObjects.push(this.info[i].o1);
+            }
+            if (allObjects.indexOf(this.info[i].o2) == -1) {
+                allObjects.push(this.info[i].o2);
+            }
+        }
+
+        // Temporarily change mass and inertia in objects.
+        var prevMass = new Array(allObjects.length);
+        var prevInertia = new Array(allObjects.length);
+        for (i = 0; i < allObjects.length; i++) {
+            prevMass[i] = allObjects[i].mass;
+            prevInertia[i] = allObjects[i].inertia;
+            if (!allObjects[i].anchored) {
+                var newMass = 10 + Math.log(allObjects[i].mass);
+                allObjects[i].mass = newMass;
+                allObjects[i].inertia = (newMass / allObjects[i].mass) * allObjects[i].inertia;
+            }
+        }
+
+        // Re-calculate info array.
+        for (i = 0; i < this.info.length; i++) {
+            this.info[i] = this.speedAdjuster.getCollisionPointInfo(this.info[i].cp);
+        }
+
+        // Per collision point, get other collision points that are affected directly by an opposite speed application.
+        for (i = 0; i < this.info.length; i++) {
+            var c1 = this.info[i];
+            this.info[i].fx = [];
+            for (var k = 0; k < this.info.length; k++) {
+                if (i == k) continue;
+                var c2 = this.info[k];
+
+                // Calculate effect of 1 m/s on c1 on c2's collision point.
+                var effect = this.speedAdjuster.getCollisionPointEffect(c1, c2);
+
+                if (effect) {
+                    this.info[i].fx.push({index: k, effect: effect});
+                }
+            }
+        }
+
+        // Calculate new items and re-solve the situation based on the changed mass.
+        items = this.getSolverItems();
+
+        // Solve the situation.
+        this.speedAdjuster.staticSolverEngine.initialize(items);
+        this.solve(items);
+
+        // Reset mass and inertia to original values.
+        for (i = 0; i < allObjects.length; i++) {
+            allObjects[i].mass = prevMass[i];
+            allObjects[i].inertia = prevInertia[i];
+        }
+    }
 
     // Applies friction impulse.
-    /*this.applyFriction(this.speedAdjuster.staticSolverEngine.getSolution());
+    this.applyFriction(this.speedAdjuster.staticSolverEngine.getSolution());
 
     // Re-roll the static solver engine, using the new diffs for friction.
     var newSolverItems = this.getSolverItems();
     var newDiffs = newSolverItems.map(function(item) {return item.diff;});
     this.speedAdjuster.staticSolverEngine.diffs = newDiffs;
-*/
 
     // Correct for look-ahead.
     var obj = this.applySolutionWithLookAheadCorrection(items);
@@ -433,15 +505,6 @@ SpeedAdjusterGroup.prototype.applySolutionWithLookAheadCorrection = function(ite
     // Apply initial solution's speeds to objects.
     var result = this.speedAdjuster.staticSolverEngine.getSolution();
     this.applyCollisionPointSpeeds(result);
-
-    // @todo: remove debug check.
-    for (i = 0; i < this.info.length; i++) {
-        var err = this.getCollisionPointSpeedDiff(this.info[i]);
-        if (err < -1e-6) {
-            console.log(this.speedAdjuster.staticSolverEngine.toString());
-            console.log('error ' + i + ': ' + err + ' (length: ' + this.info.length + ')');
-        }
-    }
 
     while(true) {
 
@@ -483,7 +546,7 @@ SpeedAdjusterGroup.prototype.applySolutionWithLookAheadCorrection = function(ite
             // Decrease time step for next try (even if it may not be necessary).
             dt = dt * .5;
             steps++;
-            if (steps > 10) {
+            if (steps > 5) {
                 // Reset to starting situation.
                 for (i = 0; i < this.info.length; i++) {
                     this.info[i].o1.resetSpeed();
@@ -530,7 +593,7 @@ SpeedAdjusterGroup.prototype.solve = function(items) {
                 self.speedAdjuster.staticSolverEngine.solve();
             } catch(err) {
                 if (err instanceof FalseOverflowError) {
-                    console.log('false overflow error adjustment necessary');
+                    console.log('false overflow error adjustment necessary in frame ' + scene.frame);
                     // Make a small adjustment. This may introduce a slight solution error but at least makes the matrix solvable.
                     for (var i = 0; i < items[err.index].fx.length; i++) {
                         if (items[err.index].fx[i].index == err.index2) {

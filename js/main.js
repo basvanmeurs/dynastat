@@ -73,23 +73,12 @@ var initScene = function (scene) {
     obj = new SolidObject();
     obj.init(
         scene,
-        1e8,
+        1e3,
         new Vector(-45, 12),
         [new Vector(-17, 1), new Vector(0, 3), new Vector(17, 1), new Vector(17, -1), new Vector(0, -3), new Vector(-17, -1)]
     );
     obj.rotationSpeed = 4 * Math.PI;
-    obj.inertia = 1e8;
-    scene.addObject(obj);
-
-    obj = new SolidObject();
-    obj.init(
-        scene,
-        1e8,
-        new Vector(45, 12),
-        [new Vector(-17, 1), new Vector(0, 3), new Vector(17, 1), new Vector(17, -1), new Vector(0, -3), new Vector(-17, -1)]
-    );
-    obj.rotationSpeed = -4 * Math.PI;
-    obj.inertia = 1e8;
+    obj.inertia = 1e5;
     scene.addObject(obj);
 
     obj = new SolidObject();
@@ -97,11 +86,12 @@ var initScene = function (scene) {
         scene,
         1e12,
         new Vector(0, -20),
-        [new Vector(-100, 100), new Vector(-5, 100), new Vector(-5, 98), new Vector(-98, 98), new Vector(-98, 5), new Vector(98, 5), new Vector(98, 98), new Vector(5, 98), new Vector(5, 100), new Vector(100, 100), new Vector(100, -5), new Vector(-100, -5)]
+        [new Vector(-200, 200), new Vector(-5, 200), new Vector(-5, 198), new Vector(-198, 198), new Vector(-198, 5), new Vector(198, 5), new Vector(198, 198), new Vector(5, 198), new Vector(5, 200), new Vector(200, 200), new Vector(200, -5), new Vector(-200, -5)]
     );
     obj.rotationSpeed = 0;
     obj.speed.x = 0;
     obj.speed.y = 0;
+    obj.anchored = true;
     scene.addObject(obj);
 
     // Start.
@@ -164,7 +154,7 @@ var initScene = function (scene) {
 
     var start = {"objects":[{"pos":{"x":80.69612136544737,"y":4.970810263855765},"speed":{"x":-10.371675302054934,"y":1.028351504216648},"rotation":5.0168280574681186,"rotationSpeed":0.48936331202333166},{"pos":{"x":-82.81646428793007,"y":1.4719027477837356},"speed":{"x":13.520838396477734,"y":-9.45161969006772},"rotation":87.103185807559,"rotationSpeed":2.070642630263654},{"pos":{"x":45.12331129871436,"y":-9.47989500377682},"speed":{"x":-418.00744825615385,"y":-77.80985587619415},"rotation":21.912537140745357,"rotationSpeed":27.71690306786273},{"pos":{"x":92.73046197669615,"y":-7.999214591695361},"speed":{"x":-0.0000036315312737640476,"y":-0.10008558000375294},"rotation":4.712389816396962,"rotationSpeed":3.5123678563754275e-7},{"pos":{"x":78.0840254737038,"y":-7.999340991509639},"speed":{"x":-0.7096168100250473,"y":-0.10009195527078868},"rotation":20.420375915026373,"rotationSpeed":0.0058530928095010416},{"pos":{"x":14.849682784982827,"y":-7.999279952794504},"speed":{"x":28.048592092526494,"y":-0.10008912220877003},"rotation":20.420353084345983,"rotationSpeed":-0.0013996559471111086},{"pos":{"x":-44.99851552349747,"y":14.857500146867624},"speed":{"x":0.0011294762814591745,"y":1.1640500560584244},"rotation":195.85364566498757,"rotationSpeed":0.10817721878720327},{"pos":{"x":45.00020577092308,"y":12.041285445626933},"speed":{"x":-0.005422338943345738,"y":0.009540341910948564},"rotation":-224.34546937332632,"rotationSpeed":-12.319017168167068},{"pos":{"x":-1.8516661334234674e-7,"y":-20.00029211550398},"speed":{"x":4.693753650699376e-7,"y":-0.00011760223053649269},"rotation":8.360122728258928e-7,"rotationSpeed":3.4532618527275394e-7}],"cps":[{"e":[8,4],"p":[3,1]},{"e":[8,4],"p":[5,0]},{"e":[8,4],"p":[5,5]},{"e":[8,4],"p":[3,2]},{"e":[8,4],"p":[4,0]},{"e":[8,4],"p":[4,5]},{"e":[8,4],"p":[2,0]},{"e":[4,2],"p":[0,4]},{"e":[2,3],"p":[7,0]}]};
 
-
+/*
      for (var i = 0; i < start.objects.length; i++) {
      var k = start.objects[i];
      scene.objects[i].step(0, true);
@@ -186,11 +176,11 @@ var initScene = function (scene) {
      );
      scene.collisionPoints.push(cp);
      }
-
+*/
     scene.view.update();
 
     scene.stepCallback = function (object, dt) {
-        if (object.index < scene.objects.length - 3) {
+        if (object.index < scene.objects.length - 1) {
             //object.addSpeed(object.speed.x * -.01 * dt, object.speed.y * -.01 * dt, object.rotationSpeed * -.01);
             object.addSpeed(0, -20 * dt, 0);
         }
