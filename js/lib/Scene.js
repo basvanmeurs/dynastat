@@ -51,17 +51,29 @@ var Scene = function() {
     this.totalCollisionTime = 0;
 
     this.play = function() {
+        this.simulate();
+        this.updateView();
+    };
 
-        var latestDt = this.step(Scene.TIMESTEP);
+    this.updateView = function() {
+        this.view.update();
+        requestAnimationFrame(function() {
+            self.updateView();
+        });
+    };
 
-        if (latestDt < Scene.TIMESTEP * .5) {
-            // Try to do another step because the gained time was very small.
-            latestDt += this.step(Scene.TIMESTEP - latestDt);
+    this.simulate = function() {
+        var maxT = scene.t + Scene.TIMESTEP;
+        var t = scene.t;
+
+        var count = 0;
+        while (t < maxT - 1e-6) {
+            count++;
+            t = this.step(maxT - t);
         }
         setTimeout(function() {
-            self.view.update();
-            self.play();
-        }, latestDt * 1000);
+            self.simulate();
+        }, Scene.TIMESTEP * 1000);
     };
 
     /**
@@ -83,74 +95,43 @@ var Scene = function() {
         var info = this.progress(dt);
 
         // Go up to the progress time.
-        this.setT(this.t + info.dt);
+        this.setT(info.t);
 
         // Add the newly found collision points.
         for (var i = 0; i < info.collisions.length; i++) {
             // Remove duplicates in collision points.
-            var exists = false;
-            for (var j = 0; j < this.collisionPoints.length; j++) {
-                if ((this.collisionPoints[j].edge == info.collisions[i].edge) && (this.collisionPoints[j].point == info.collisions[i].point)) {
-                    exists = true;
-                    break;
-                }
-            }
-            if (!exists) {
-                this.collisionPoints.push(info.collisions[i]);
-            }
+            this.collisionPoints.push(info.collisions[i]);
         }
 
-        return info.dt;
+        return info.t;
     };
 
     /**
      * Moves the model forward (in time) until something happens that requires a new collision recalculation. 
      * @param {Number} dt
      *   The maximum time step to move forward.
-     * @return {{dt : Number, collisions: CollisionPoint[]}}
+     * @return {{t : Number, collisions: CollisionPoint[]}}
      *   Information about the progress end time step and possible occurring collisions.
      */
     this.progress = function(dt) {
         var i, j;
 
-        var foundCollisionPoints = [];
-
-        var recursionCounter = 0;
-        while(true) {
-            recursionCounter++;
-
-            // Detect collision.
-            var maxTime = this.t + dt;
-            var minT = null;
-            var collisionPoints;
-            for (i = 0; i < this.objects.length; i++) {
-                for (j = i + 1; j < this.objects.length; j++) {
-                    var cps =  this.objects[i].getCollision(this.objects[j], this.t, maxTime);
-                    if (cps.length > 0) {
-                        if ((minT == null) || (this.objects[i].t < minT)) {
-                            collisionPoints = cps;
-                            minT = this.objects[i].t;
-                        }
+        // Detect collision.
+        var maxT = this.t + dt;
+        var minT = null;
+        var collisionPoints = [];
+        for (i = 0; i < this.objects.length; i++) {
+            for (j = i + 1; j < this.objects.length; j++) {
+                var cps = this.objects[i].getCollision(this.objects[j], this.t, maxT);
+                if (cps.length > 0) {
+                    if ((minT == null) || (this.objects[i].t < minT)) {
+                        collisionPoints = cps;
+                        minT = this.objects[i].t;
                     }
                 }
             }
-            if (minT == null) {
-                // No (new) collisions found: we're done!
-                return {dt: dt, collisions: foundCollisionPoints};
-            } else {
-                // A collision was found. Limit dt to that.
-                dt = minT - this.t;
-
-                // Reset all solid objects to the 'starting' time again.
-                for (i = 0; i < this.objects.length; i++) {
-                    this.objects[i].setT(this.t);
-                }
-
-                // Remember last collision.
-                foundCollisionPoints = collisionPoints;
-            }
-        };
-        return {dt: dt, collisions: []};
+        }
+        return {t: minT ? minT : maxT, collisions: collisionPoints};
     };
 
     /**
@@ -186,7 +167,7 @@ var Scene = function() {
  * A collision will only occur within this threshold.
  * @type {Number}
  */
-Scene.COLLISION_PROXIMITY = .01; // 1cm.
+Scene.COLLISION_PROXIMITY = .01;
 
 /**
  * The time step per iteration.

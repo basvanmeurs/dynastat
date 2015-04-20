@@ -55,6 +55,14 @@ var SpeedAdjuster = function(scene) {
             this.info[i] = this.getCollisionPointInfo(this.scene.collisionPoints[i]);
         }
 
+        // Push virtual connection for child objects.
+        for (i = 0; i < this.scene.objects.length; i++) {
+            if (this.scene.objects[i].parent) {
+                this.info.push(this.getConnectionPointInfo(this.scene.objects[i], new Vector(1, 0)));
+                this.info.push(this.getConnectionPointInfo(this.scene.objects[i], new Vector(0, 1)));
+            }
+        }
+
         // Per collision point, get other collision points that are affected directly by an opposite speed application.
         for (i = 0; i < this.info.length; i++) {
             var c1 = this.info[i];
@@ -66,7 +74,7 @@ var SpeedAdjuster = function(scene) {
                 // Calculate effect of 1 m/s on c1 on c2's collision point.
                 var effect = this.getCollisionPointEffect(c1, c2);
 
-                if (effect) {
+                if (effect < -1e-12 || effect > 1e-12) {
                     this.info[i].fx.push({index: k, effect: effect});
                 }
             }
@@ -139,7 +147,48 @@ var SpeedAdjuster = function(scene) {
         var key = "" + c.edgeSolidObject.index + "-" + c.edge.index + "_" + c.pointSolidObject.index + "-" + c.point.index;
 
         // Return physics info about the collision.
-        return {cp: c, key: key, o1: o1, o2: o2, dv1: dv1, dv2: dv2, dw1: dw1, dw2: dw2, r1: r1, r2: r2, n: n, dist: dist, impulsePerSpeedDiff: j};
+        return {cp: c, abs: cp, key: key, o1: o1, o2: o2, dv1: dv1, dv2: dv2, dw1: dw1, dw2: dw2, r1: r1, r2: r2, n: n, dist: dist, impulsePerSpeedDiff: j};
+    };
+
+    /**
+     * Gets physics info about the connection point.
+     * @param {SolidObject} c
+     * @param {Vector} n
+     * @returns {{o1: SolidObject, o2: SolidObject, dv1: Vector, dv2: Vector, dw1: number, dw2: number, r1: Vector, r2: Vector, n: Vector}}
+     */
+    this.getConnectionPointInfo = function(c, n) {
+        n = c.parent.getRotatedCoordinates(n);
+
+        // Get collision info.
+        var o1 = c.parent;
+        var o2 = c;
+
+        // Calculate speed normal increase components.
+
+        // Collision point coordinates.
+        var cp = c.parent.getAbsoluteCoordinates(c.parentMountPoint);
+
+        // Vectors from center of mass for both solid objects.
+        var r1 = cp.sub(o1.position);
+        var r2 = cp.sub(o2.getChildPosition());
+
+        // Get dv1, dv2, dw1 and dw2 per 1 unit of moment.
+        var dv1 = n.mul(-1 / o1.mass);
+        var dv2 = n.mul(1 / o2.mass);
+        var dw1 = -r1.crossProduct(n) / o1.inertia;
+        var dw2 = r2.crossProduct(n) / o2.inertia;
+
+        // Scale all speed components so that they total to 1 m/s of unit speed difference.
+        var j = 1 / ((dv2.add(r2.getPerp().mul(dw2))).d(n) - (dv1.add(r1.getPerp().mul(dw1))).d(n));
+        dv1 = dv1.mul(j);
+        dv2 = dv2.mul(j);
+        dw1 *= j;
+        dw2 *= j;
+
+        var key = "" + c.index + "-" + c.parent.index;
+
+        // Return physics info about the collision.
+        return {cp: null, abs: cp, key: key, o1: o1, o2: o2, dv1: dv1, dv2: dv2, dw1: dw1, dw2: dw2, r1: r1, r2: r2, n: n, dist: 0, impulsePerSpeedDiff: j, connection: true};
     };
 
     /**
@@ -208,7 +257,7 @@ var SpeedAdjuster = function(scene) {
         }
 
         // Replace info indices per group.
-        var k, fx;
+        var k;
         for (i = 0; i < groups.length; i++) {
             for (j = 0; j < groups[i].length; j++) {
                 var fx = groups[i][j].fx;
@@ -244,12 +293,12 @@ var SpeedAdjuster = function(scene) {
             });
         }
 
-        if (this.scene.collisionPoints.length == 0) {
-            return dt;
-        }
-
         // Initialize collision point meta information.
         this.initCollisionPoints();
+
+        if (this.info.length == 0) {
+            return dt;
+        }
 
         // Split collision points into connected groups.
         var groups = this.getCollisionPointGroups();
@@ -311,23 +360,21 @@ SpeedAdjusterGroup.prototype.getSolverItems = function() {
 
     // Use matrix solver to get result.
     for (var i = 0; i < this.info.length; i++) {
-        var cp = this.info[i].cp;
-
         // Get vd.
         var vd = this.getNormalSpeedDiff(
-            cp.edgeSolidObject.speed,
-            cp.edgeSolidObject.rotationSpeed,
+            this.info[i].o1.speed,
+            this.info[i].o1.rotationSpeed,
             this.info[i].r1,
-            cp.pointSolidObject.speed,
-            cp.pointSolidObject.rotationSpeed,
+            this.info[i].o2.speed,
+            this.info[i].o2.rotationSpeed,
             this.info[i].r2,
             this.info[i].n
         );
 
         var key = this.info[i].key;
-        var time = cp.edgeSolidObject.t;
+        var time = this.info[i].o1.t;
         var bounce = false;
-        if (!this.speedAdjuster.lastCollisionsTimes.hasOwnProperty(key) || (time > this.speedAdjuster.lastCollisionsTimes[key] + 0.25)) {
+        if (!this.speedAdjuster.lastCollisionsTimes.hasOwnProperty(key) || (time > this.speedAdjuster.lastCollisionsTimes[key] + 0.25 || (time == this.speedAdjuster.lastCollisionsTimes[key]))) {
             bounce = true;
         } else {
             bounce = false;
@@ -336,31 +383,45 @@ SpeedAdjusterGroup.prototype.getSolverItems = function() {
         this.speedAdjuster.lastCollisionsTimes[key] = time;
 
         var d;
-        if (bounce) {
-            d = vd * -1.2;
+        if (this.info[i].connection) {
+            d = -vd;
         } else {
-            // In case that there is a distance between the edge and the point, let some of the speed
-            // remain so that the distance will decrease.
-            if (this.info[i].dist > .1 * Scene.COLLISION_PROXIMITY) {
+            if (bounce) {
+                d = -vd * 1.2;
+            } else {
+                // In case that there is a distance between the edge and the point, let some of the speed
+                // remain so that the distance will decrease.
+                if (this.info[i].dist > .1 * Scene.COLLISION_PROXIMITY) {
 
-                // Get required speed in order to compensate during dt timeframe.
-                var s = (.1 * Scene.COLLISION_PROXIMITY - this.info[i].dist) / this.speedAdjuster.frameDt;
+                    // Get required speed in order to compensate during dt timeframe.
+                    var s = (.1 * Scene.COLLISION_PROXIMITY - this.info[i].dist) / this.speedAdjuster.frameDt;
 
-                if (vd > 0) {
-                    d = -vd;
-                } else {
-                    if (vd > s) {
-                        d = 0;
+                    if (vd > 0) {
+                        d = -vd;
                     } else {
+                        if (vd > s) {
+                            d = -vd;
+                        } else {
+                            d = s - vd;
+                        }
+                    }
+                } else {
+                    if (this.info[i].dist < 0) {
+                        if (this.info[i].dist < -Scene.COLLISION_PROXIMITY) {
+                            console.log('large collision overlap: ' + this.info[i].dist);
+                        }
+                        // Correct by applying extra impulse.
+                        // Get required speed in order to compensate during dt timeframe.
+                        var s = (.1 * Scene.COLLISION_PROXIMITY - this.info[i].dist) / this.speedAdjuster.frameDt;
                         d = s - vd;
+                    } else {
+                        d = -vd;
                     }
                 }
-            } else {
-                d = -vd;
             }
         }
 
-        var item = {diff: d, fx: this.info[i].fx};
+        var item = {diff: d, fx: this.info[i].fx, conn: this.info[i].connection};
 
         items.push(item);
     }
@@ -383,100 +444,34 @@ SpeedAdjusterGroup.prototype.adjust = function() {
 
     this.solve(items);
 
-    // Detect extreme solutions.
-    //@todo: detect chains instead of all.
-    var solution = this.speedAdjuster.staticSolverEngine.getSolution();
-    var extremeSolutions = false;
-    for (i = 0; i < solution.length; i++) {
-        if (solution[i] < -1e3 || solution[i] > 1e3) {
-            extremeSolutions = true;
-            break;
-        }
-    }
+    // Apply initial solution's speeds to objects.
+    var result = this.speedAdjuster.staticSolverEngine.getSolution();
+    this.applyCollisionPointSpeeds(result);
 
-    if (extremeSolutions) {
-        // Damp mass for this frame to prevent mayhem.
-console.log('damping masses in frame ' + scene.frame);
-        // @todo: detect chains instead of all.
-
-        // Get all objects.
-        var allObjects = [];
-        for (i = 0; i < this.info.length; i++) {
-            if (allObjects.indexOf(this.info[i].o1) == -1) {
-                allObjects.push(this.info[i].o1);
-            }
-            if (allObjects.indexOf(this.info[i].o2) == -1) {
-                allObjects.push(this.info[i].o2);
-            }
-        }
-
-        // Temporarily change mass and inertia in objects.
-        var prevMass = new Array(allObjects.length);
-        var prevInertia = new Array(allObjects.length);
-        for (i = 0; i < allObjects.length; i++) {
-            prevMass[i] = allObjects[i].mass;
-            prevInertia[i] = allObjects[i].inertia;
-            if (!allObjects[i].anchored) {
-                var newMass = 10 + Math.log(allObjects[i].mass);
-                allObjects[i].mass = newMass;
-                allObjects[i].inertia = (newMass / allObjects[i].mass) * allObjects[i].inertia;
-            }
-        }
-
-        // Re-calculate info array.
-        for (i = 0; i < this.info.length; i++) {
-            this.info[i] = this.speedAdjuster.getCollisionPointInfo(this.info[i].cp);
-        }
-
-        // Per collision point, get other collision points that are affected directly by an opposite speed application.
-        for (i = 0; i < this.info.length; i++) {
-            var c1 = this.info[i];
-            this.info[i].fx = [];
-            for (var k = 0; k < this.info.length; k++) {
-                if (i == k) continue;
-                var c2 = this.info[k];
-
-                // Calculate effect of 1 m/s on c1 on c2's collision point.
-                var effect = this.speedAdjuster.getCollisionPointEffect(c1, c2);
-
-                if (effect) {
-                    this.info[i].fx.push({index: k, effect: effect});
-                }
-            }
-        }
-
-        // Calculate new items and re-solve the situation based on the changed mass.
-        items = this.getSolverItems();
-
-        // Solve the situation.
-        this.speedAdjuster.staticSolverEngine.initialize(items);
-        this.solve(items);
-
-        // Reset mass and inertia to original values.
-        for (i = 0; i < allObjects.length; i++) {
-            allObjects[i].mass = prevMass[i];
-            allObjects[i].inertia = prevInertia[i];
-        }
-    }
-
+//console.log(this.speedAdjuster.staticSolverEngine.toString());
     // Applies friction impulse.
-    this.applyFriction(this.speedAdjuster.staticSolverEngine.getSolution());
+    this.applyFriction(result);
 
     // Re-roll the static solver engine, using the new diffs for friction.
     var newSolverItems = this.getSolverItems();
     var newDiffs = newSolverItems.map(function(item) {return item.diff;});
     this.speedAdjuster.staticSolverEngine.diffs = newDiffs;
+    this.solve(newSolverItems);
 
-    // Correct for look-ahead.
-    var obj = this.applySolutionWithLookAheadCorrection(items);
-    var dt = obj.dt;
-    var result = obj.result;
+    // Apply solution's speeds to objects.
+    result = this.speedAdjuster.staticSolverEngine.getSolution();
+    this.applyCollisionPointSpeeds(result);
+
+    // Get max dt.
+    var dt = this.getSolutionMaxDt();
 
     // Remove collision points that are no longer valid from all groups.
     var newInfos = [];
     for (i = 0; i < this.info.length; i++) {
-        if (!(result[i] == 0 && (this.info[i].dist > .2) && (!this.speedAdjuster.lastLookAheadCps.hasOwnProperty(this.info[i].key)))) {
-            newInfos.push(this.info[i]);
+        if (!this.info[i].connection) {
+            if (!(result[i] == 0 && (this.info[i].dist > .2) && (!this.speedAdjuster.lastLookAheadCps.hasOwnProperty(this.info[i].key)))) {
+                newInfos.push(this.info[i]);
+            }
         }
     }
 
@@ -484,85 +479,49 @@ console.log('damping masses in frame ' + scene.frame);
 };
 
 /**
- * Checks if any of the collision points has penetrated the edge @maxTime and correct speeds to prevent this from happening.
- * @param items
+ * Finds the max dt at which at least no collision point penetrates the edge object for more than 10cm.
+ * @return {Number}
  */
-SpeedAdjusterGroup.prototype.applySolutionWithLookAheadCorrection = function(items) {
-    var i;
-
-    // Set speed resets
-    for (i = 0; i < this.info.length; i++) {
-        this.info[i].o1.setSpeedReset();
-        this.info[i].o2.setSpeedReset();
-    }
-
-    // Remember current diff configurations.
-    var originalDiffs = this.speedAdjuster.staticSolverEngine.diffs.slice(0);
-
+SpeedAdjusterGroup.prototype.getSolutionMaxDt = function() {
     var dt = this.speedAdjuster.frameDt;
     var steps = 0;
-
-    // Apply initial solution's speeds to objects.
-    var result = this.speedAdjuster.staticSolverEngine.getSolution();
-    this.applyCollisionPointSpeeds(result);
+    var i;
 
     while(true) {
 
-        if (steps > 0) {
-            // Reset to starting situation.
-            for (i = 0; i < this.info.length; i++) {
-                this.info[i].o1.resetSpeed();
-                this.info[i].o2.resetSpeed();
-            }
-
-            // Apply last found configuration to objects.
-            result = this.speedAdjuster.staticSolverEngine.getSolution();
-            this.applyCollisionPointSpeeds(result);
-
-            // Reset diffs configuration for next try.
-            this.speedAdjuster.staticSolverEngine.diffs = originalDiffs.slice(0);
-        }
-
         // Try out the newly applied speeds.
-        var affectedPoints = 0;
+        var maxDistDiff = 0;
         for (i = 0; i < this.info.length; i++) {
-            var dist2 = this.progressCollisionPointPeek(this.info[i].cp, dt);
-            if (dist2 < 0) {
-                // This is bad.
-                affectedPoints++;
-
-                // Modify diff so that we can (hopefully) correct the problem.
-                this.speedAdjuster.staticSolverEngine.diffs[i] += (this.info[i].dist - dist2 + Scene.COLLISION_PROXIMITY) / dt;
+            if (!this.info[i].connection && !this.speedAdjuster.staticSolverEngine.killed[i]) {
+                var dist2 = this.progressCollisionPointPeek(this.info[i].cp, this.speedAdjuster.scene.t + dt);
+                if (dist2 < 0) {
+                    var d = dist2 - this.info[i].dist;
+                    maxDistDiff = Math.min(d, maxDistDiff);
+                }
             }
         }
 
-        if (affectedPoints == 0) {
+        if (maxDistDiff > -0.5 * Scene.COLLISION_PROXIMITY) {
             // Done!
             break;
         } else {
-            // Apply corrections.
-            this.solve(items);
-
             // Decrease time step for next try (even if it may not be necessary).
             dt = dt * .5;
             steps++;
-            if (steps > 5) {
-                // Reset to starting situation.
-                for (i = 0; i < this.info.length; i++) {
-                    this.info[i].o1.resetSpeed();
-                    this.info[i].o2.resetSpeed();
-                }
-
+            if (steps > 10) {
                 logSituation();
-                throw new Error("can't fix look-ahead problems in frame " + scene.frame);
+                console.error("can't fix look-ahead problems in frame " + scene.frame);
+
+                // Let's hope this won't break everything.
+                break;
             }
+        }
+        if (steps >= 5) {
+            console.log('serious look-ahead issue');
         }
     }
 
-    if (steps >= 3) {
-        console.log('serious look-ahead issue');
-    }
-    return {dt: dt, result: result};
+    return dt;
 };
 
 /**
@@ -585,39 +544,56 @@ SpeedAdjusterGroup.prototype.applyCollisionPointSpeeds = function(result) {
  * Solves the static collision points model.
  */
 SpeedAdjusterGroup.prototype.solve = function(items) {
+    var self = this;
+
     try {
-        var self = this;
-        var recursion = 0;
-        var solveWithCorrection = function() {
-            try {
-                self.speedAdjuster.staticSolverEngine.solve();
-            } catch(err) {
-                if (err instanceof FalseOverflowError) {
-                    console.log('false overflow error adjustment necessary in frame ' + scene.frame);
-                    // Make a small adjustment. This may introduce a slight solution error but at least makes the matrix solvable.
-                    for (var i = 0; i < items[err.index].fx.length; i++) {
-                        if (items[err.index].fx[i].index == err.index2) {
-                            items[err.index].fx[i].effect += 1e-4;
-                        }
-                    }
-                    self.speedAdjuster.staticSolverEngine.initialize(items);
-                    solveWithCorrection();
-                    recursion++;
-                    if (recursion > 100) {
-                        throw new Error('FalseOverflowError recursion');
+        try {
+            self.speedAdjuster.staticSolverEngine.solve();
+        } catch(err) {
+            if (err instanceof FalseOverflowError) {
+                // Make a small adjustment. This may introduce a slight solution error but at least makes the matrix solvable.
+                for (var i = 0; i < items[err.index].fx.length; i++) {
+                    if (items[err.index].fx[i].index == err.index2) {
+                        items[err.index].fx[i].effect += 1e-5;
                     }
                 }
-            }
-        };
+                for (i = 0; i < items[err.index2].fx.length; i++) {
+                    if (items[err.index2].fx[i].index == err.index) {
+                        items[err.index2].fx[i].effect -= 1e-5;
+                    }
+                }
 
-        solveWithCorrection();
+                self.speedAdjuster.staticSolverEngine.initialize(items);
+
+                try {
+                    self.speedAdjuster.staticSolverEngine.solve();
+                } catch(err2) {
+                    if (err2 instanceof FalseOverflowError) {
+                        // Remove point altogether and let the main-loop infinite collision detection handle this situation.
+                        console.log('false overflow error killPoint situation in frame ' + scene.frame);
+                        self.speedAdjuster.staticSolverEngine.killPoint(err2.index);
+                        self.speedAdjuster.staticSolverEngine.solve();
+                    } else {
+                        throw err2;
+                    }
+                }
+
+            } else {
+                throw err;
+            }
+        }
     } catch(e) {
+        logSituation();
         console.error(e);
-        throw new Error("static solver engine recursion: \n" + this.speedAdjuster.staticSolverEngine.toString() + "\n\n\nItems: " + JSON.stringify(items));
+        console.error("static solver info: \n" + this.speedAdjuster.staticSolverEngine.toString() + "\n\n\nItems: " + JSON.stringify(items));
+
+        // Continue and wish for the best.
     }
 
-    if (!this.speedAdjuster.staticSolverEngine.solvedCorrectly()) {
-        throw new Error("static solver engine didn't solve correctly: \n" + this.speedAdjuster.staticSolverEngine.toString() + "\n\n\nItems: " + JSON.stringify(items));
+    if (!this.speedAdjuster.staticSolverEngine.solvedCorrectly(1e-4)) {
+        logSituation();
+        console.error("static solver engine didn't solve correctly in frame " + scene.frame + ": \n" + this.speedAdjuster.staticSolverEngine.toString() + "\n\n\nItems: " + JSON.stringify(items));
+        // This is not a show stopper.
     }
 };
 
@@ -625,21 +601,21 @@ SpeedAdjusterGroup.prototype.solve = function(items) {
  * Peeks into the future and returns the distance between the collision point and the collision edge.
  * @param {CollisionPoint} cp
  *   The collision point to 'peek' for.
- * @param dt
- *   The amount of time to 'step'.
+ * @param t
+ *   The peeking time.
  * @returns {number}
  *   This distance, in m. Negative means that the cp has penetrated the edge.
  */
-SpeedAdjusterGroup.prototype.progressCollisionPointPeek = function(cp, dt) {
+SpeedAdjusterGroup.prototype.progressCollisionPointPeek = function(cp, t) {
     // Remember current situation.
     cp.pointSolidObject.saveSituation();
     cp.edgeSolidObject.saveSituation();
 
     // Step ahead to dt.
-    cp.pointSolidObject.step(dt, true);
+    cp.pointSolidObject.setT(t);
     cp.pointSolidObject.updateCornerPoint(cp.point);
 
-    cp.edgeSolidObject.step(dt, true);
+    cp.edgeSolidObject.setT(t);
     cp.edgeSolidObject.updateCornerPoint(cp.edge);
     cp.edgeSolidObject.updateCornerPoint(cp.edge.next);
 
@@ -662,7 +638,9 @@ SpeedAdjusterGroup.prototype.progressCollisionPointPeek = function(cp, dt) {
 SpeedAdjusterGroup.prototype.applyFriction = function(pushSpeeds) {
     // Calculate friction.
     for (var i = 0; i < pushSpeeds.length; i++) {
-        var cp = this.info[i].cp;
+        if (this.info[i].connection) {
+            return;
+        }
 
         if (pushSpeeds[i] > 0) {
             // How much impulse was applied on the collision point to counter the collision?
@@ -676,11 +654,11 @@ SpeedAdjusterGroup.prototype.applyFriction = function(pushSpeeds) {
 
             // Get perpendicular speed difference on the collision edge.
             var vd = this.getNormalSpeedDiff(
-                cp.edgeSolidObject.speed,
-                cp.edgeSolidObject.rotationSpeed,
+                this.info[i].o1.speed,
+                this.info[i].o1.rotationSpeed,
                 this.info[i].r1,
-                cp.pointSolidObject.speed,
-                cp.pointSolidObject.rotationSpeed,
+                this.info[i].o2.speed,
+                this.info[i].o2.rotationSpeed,
                 this.info[i].r2,
                 nPerp
             );
@@ -691,10 +669,10 @@ SpeedAdjusterGroup.prototype.applyFriction = function(pushSpeeds) {
             }
 
             // Get the speed effect per 1 unit of moment of applied friction.
-            var mDv1Perp = nPerp.mul(-1 / cp.edgeSolidObject.mass);
-            var mDv2Perp = nPerp.mul(1 / cp.pointSolidObject.mass);
-            var mDw1Perp = -this.info[i].r1.crossProduct(nPerp) / cp.edgeSolidObject.inertia;
-            var mDw2Perp = this.info[i].r2.crossProduct(nPerp) / cp.pointSolidObject.inertia;
+            var mDv1Perp = nPerp.mul(-1 / this.info[i].o1.mass);
+            var mDv2Perp = nPerp.mul(1 /this.info[i].o2.mass);
+            var mDw1Perp = -this.info[i].r1.crossProduct(nPerp) / this.info[i].o1.inertia;
+            var mDw2Perp = this.info[i].r2.crossProduct(nPerp) / this.info[i].o2.inertia;
 
             // Get the vd netto result of 1 unit of moment of applied friction.
             var vdNetto = ((mDv2Perp.add(this.info[i].r2.getPerp().mul(mDw2Perp))).d(nPerp) - (mDv1Perp.add(this.info[i].r1.getPerp().mul(mDw1Perp))).d(nPerp));
@@ -716,15 +694,15 @@ SpeedAdjusterGroup.prototype.applyFriction = function(pushSpeeds) {
             frictionImpulse = Math.min(frictionImpulse, 300);
 
             // Apply the friction impulse on both solid objects.
-            cp.edgeSolidObject.applyImpulseAbsolute(
-                cp.point.getAbsoluteCoordinates(),
+            this.info[i].o1.applyImpulseAbsolute(
+                this.info[i].abs,
                 nPerp,
                 -frictionImpulse,
                 true
             );
 
-            cp.pointSolidObject.applyImpulseAbsolute(
-                cp.point.getAbsoluteCoordinates(),
+            this.info[i].o2.applyImpulseAbsolute(
+                this.info[i].abs,
                 nPerp,
                 frictionImpulse,
                 true
@@ -740,7 +718,7 @@ SpeedAdjusterGroup.prototype.applyFriction = function(pushSpeeds) {
  * @returns {number}
  */
 SpeedAdjusterGroup.prototype.getCollisionPointSpeedDiff = function(info) {
-    return this.getNormalSpeedDiff(info.cp.edgeSolidObject.speed, info.cp.edgeSolidObject.rotationSpeed, info.r1, info.cp.pointSolidObject.speed, info.cp.pointSolidObject.rotationSpeed, info.r2, info.n);
+    return this.getNormalSpeedDiff(info.o1.speed, info.o1.rotationSpeed, info.r1, info.o2.speed, info.o2.rotationSpeed, info.r2, info.n);
 };
 
 /**

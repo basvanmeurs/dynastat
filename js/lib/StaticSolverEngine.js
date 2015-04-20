@@ -45,16 +45,30 @@ var StaticSolverEngine = function(maxPoints) {
     this.enabled = new Array(this.maxPoints);
 
     /**
+     * If a point is killed, it will never be added again.
+     * @type {Array}
+     */
+    this.killed = new Array(this.maxPoints);
+
+    /**
      * The number of points currently in the model.
      * @type {number}
      */
     this.n = 0;
 
     /**
+     * The points.
+     * @type {{diff: number, fx: {index: int, effect: number}, conn: Boolean}[]}
+     */
+    this.points = null;
+
+    /**
      * Initializes the engine with the specified points.
-     * @param {{diff: number, fx: {index: int, effect: number}}[]} points
+     * @param {{diff: number, fx: {index: int, effect: number}, conn: Boolean}[]} points
      */
     this.initialize = function(points) {
+        this.points = points;
+
         // Resize FX array to the required space and init as identity.
         this.fx.resize(points.length, points.length);
         this.fx.identity();
@@ -70,6 +84,7 @@ var StaticSolverEngine = function(maxPoints) {
             }
 
             this.enabled[i] = false;
+            this.killed[i] = false;
         }
 
         // Init solution array as identity.
@@ -78,6 +93,18 @@ var StaticSolverEngine = function(maxPoints) {
 
         // Init state.
         this.state.copy(this.fx);
+    };
+
+    /**
+     * If the specified point is currently enabled, it is disabled. A flag is set so that the point will never be
+     *   enabled later, and is not regarded as part of the solution any more.
+     * @param index
+     */
+    this.killPoint = function(index) {
+        if (this.enabled[index]) {
+            this.removePoint(index);
+        }
+        this.killed[index] = true;
     };
 
     /**
@@ -104,10 +131,10 @@ var StaticSolverEngine = function(maxPoints) {
 
                 v = this.state.cells[index * this.state.w + i] * this.state.cells[i * this.state.w + index];
                 k -= v;
-                if (k < 1e-8 && k > -1e-8) {
+                if (k < 1e-6 && k > -1e-6) {
                     // Overshadowing situation! First remove point i from set, and then try again to add point.
                     if (this.state.cells[index * this.state.w + i] < 0) {
-                        // False overshadow. We'll have to introduce some noise unfortunately.
+                        // False overshadow. This is a nasty situation which can occur for perfectly legal situations and needs to be resolved by adding a slight noise or killing the point.
                         throw new FalseOverflowError(index, i);
                     } else {
                         this.removePoint(i);
@@ -224,7 +251,7 @@ var StaticSolverEngine = function(maxPoints) {
         this.recursionCounter = 0;
         while (this.checkPoints()) {
             this.recursionCounter++;
-            if (this.recursionCounter > 1000) {
+            if (this.recursionCounter > 2 * this.n) {
                 throw new Error("Solve recursion!\n\n" + this.toString());
             }
         }
@@ -245,16 +272,27 @@ var StaticSolverEngine = function(maxPoints) {
             // Apply random option picking to prevent infinite recursion.
             var a = 0, r = 0;
             for (i = 0; i < this.n; i++) {
-                if (!this.enabled[i]) {
+                if (!this.enabled[i] && !this.killed[i]) {
                     // Checked solution should be equal to higher than the actual diff.
                     w = this.fx.mIndex(i, solution);
-                    if (w < this.diffs[i] - 1e-9) {
-                        this.addOptions[a++] = i;
+                    if (this.points[i].conn) {
+                        if (w < this.diffs[i] - 1e-9 || w > this.diffs[i] + 1e-9) {
+                            this.addPoint(i);
+                            return true;
+                        }
+                    } else {
+                        if (w < this.diffs[i] - 1e-9) {
+                            this.addPoint(i);
+                            return true;
+                        }
                     }
                 } else {
-                    if (solution[i] < 0) {
+                    if (!this.points[i].conn && (solution[i] < -1e-9)) {
                         // Points are pulling: disable.
-                        this.remOptions[r++] = i;
+                        if (this.recursionCounter < 1.5 * this.n) {
+                            // Some matrices are solvable only with some pulling points. We'll rather solve it with those than not at all.
+                            this.remOptions[r++] = i;
+                        }
                     }
                 }
             }
@@ -263,7 +301,6 @@ var StaticSolverEngine = function(maxPoints) {
                 // No options.
                 return false;
             } else {
-                //
                 var c = Math.floor(Math.random() * (a + r));
                 if (c < a) {
                     this.addPoint(this.addOptions[c]);
@@ -275,19 +312,26 @@ var StaticSolverEngine = function(maxPoints) {
         } else {
             // Just choose the first option.
             for (i = 0; i < this.n; i++) {
-                if (!this.enabled[i]) {
+                if (!this.enabled[i] && !this.killed[i]) {
                     // Checked solution should be equal to higher than the actual diff.
                     w = this.fx.mIndex(i, solution);
-                    if (w < this.diffs[i] - 1e-9) {
-                        this.addPoint(i);
-                        return true;
+                    if (this.points[i].conn) {
+                        if (w < this.diffs[i] - 1e-9 || w > this.diffs[i] + 1e-9) {
+                            this.addPoint(i);
+                            return true;
+                        }
+                    } else {
+                        if (w < this.diffs[i] - 1e-9) {
+                            this.addPoint(i);
+                            return true;
+                        }
                     }
                 }
             }
 
             for (i = 0; i < this.n; i++) {
                 if (this.enabled[i]) {
-                    if (solution[i] < -1e-8) {
+                    if (!this.points[i].conn && (solution[i] < -1e-9)) {
                         // Points are pulling: disable.
                         this.removePoint(i);
                         return true;
@@ -301,18 +345,22 @@ var StaticSolverEngine = function(maxPoints) {
 
     /**
      * Checks if the matrix has been solved correctly.
+     * @param maxDiff
      * @return {int}
      *   The incorrectly solved index.
      */
-    this.solvedCorrectly = function() {
+    this.solvedCorrectly = function(maxDiff) {
+        if (!maxDiff) {
+            maxDiff = 1e-6;
+        }
         var solution = this.getCheckedSolution();
         for (var i = 0; i < solution.length; i++) {
             if (this.enabled[i]) {
-                if (!(solution[i] > this.diffs[i] - 1e-6 && solution[i] < this.diffs[i] + 1e-6)) {
+                if (!(solution[i] > this.diffs[i] - maxDiff && solution[i] < this.diffs[i] + maxDiff)) {
                     return i;
                 }
-            } else {
-                if (!(solution[i] > this.diffs[i] - 1e-6)) {
+            } else if (!this.killed[i]) {
+                if (!(solution[i] > this.diffs[i] - maxDiff)) {
                     return i;
                 }
             }
@@ -333,7 +381,7 @@ var StaticSolverEngine = function(maxPoints) {
 
         values = [];
         for (i = 0; i < this.n; i++) {
-            values.push(this.enabled[i] ? 1 : 0);
+            values.push(this.enabled[i] ? 1 : (this.killed[i] ? 'K' : 0));
         }
         str += "Enabled: [" + values.join("") + "]\n\n";
 
@@ -357,12 +405,14 @@ var StaticSolverEngine = function(maxPoints) {
         }
         str += "Wanted diffs:    [" + values.join(", ") + "]\n\n";
 
-        var problem = this.solvedCorrectly();
+        var problem = this.solvedCorrectly(1e-6);
         if (problem == -1) {
             str += "correctly solved!\n";
         } else {
             str += "NOT SOLVED correctly! Problem index: " + problem + " (expect " + this.diffs[problem] + ", got " + solution[problem] + ")\n";
         }
+
+        str += " (recursion counter: " + this.recursionCounter + ")\n";
 
         return str;
     };

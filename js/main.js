@@ -6,10 +6,47 @@ var initScene = function (scene) {
         scene,
         200,
         new Vector(10, 50),
-        [new Vector(-5, -4), new Vector(-5, 2), new Vector(0, 8), new Vector(5, 2), new Vector(5, -4)]
+        [new Vector(-5, -6), new Vector(-5, 8), new Vector(5, 8), new Vector(5, -6)]
     );
     obj.rotationSpeed = -.125 * Math.PI;
     obj.inertia = 5000;
+    scene.addObject(obj);
+
+    var parent = obj;
+    obj = new SolidObject();
+    obj.initChild(
+        scene,
+        5,
+        parent,
+        new Vector(0, -5),
+        new Vector(0, 10),
+        [new Vector(-3, -15), new Vector(-3, 15), new Vector(3, 15), new Vector(3, -15)]
+    );
+    obj.inertia = 100;
+    scene.addObject(obj);
+
+    obj = new SolidObject();
+    obj.init(
+        scene,
+        200,
+        new Vector(30, 50),
+        [new Vector(-5, -6), new Vector(-5, 8), new Vector(5, 8), new Vector(5, -6)]
+    );
+    obj.rotationSpeed = -.125 * Math.PI;
+    obj.inertia = 5000;
+    scene.addObject(obj);
+
+    var parent = obj;
+    obj = new SolidObject();
+    obj.initChild(
+        scene,
+        10,
+        parent,
+        new Vector(0, -5),
+        new Vector(0, 10),
+        [new Vector(-3, -15), new Vector(-3, 15), new Vector(3, 15), new Vector(3, -15)]
+    );
+    obj.inertia = 10;
     scene.addObject(obj);
 
     obj = new SolidObject();
@@ -33,6 +70,7 @@ var initScene = function (scene) {
     obj.speed.x = 0;
     obj.inertia = 10000;
     scene.addObject(obj);
+
 
     obj = new SolidObject();
     obj.init(
@@ -61,19 +99,7 @@ var initScene = function (scene) {
     obj = new SolidObject();
     obj.init(
         scene,
-        100,
-        new Vector(15, 30),
-        [new Vector(-7, 5), new Vector(0, 8), new Vector(7, 5), new Vector(7, -5), new Vector(0, -8), new Vector(-7, -5)]
-    );
-    obj.rotationSpeed = 1.125 * Math.PI;
-    obj.speed.x = 1;
-    obj.inertia = 10000;
-    scene.addObject(obj);
-
-    obj = new SolidObject();
-    obj.init(
-        scene,
-        1e3,
+        1e4,
         new Vector(-45, 12),
         [new Vector(-17, 1), new Vector(0, 3), new Vector(17, 1), new Vector(17, -1), new Vector(0, -3), new Vector(-17, -1)]
     );
@@ -84,9 +110,20 @@ var initScene = function (scene) {
     obj = new SolidObject();
     obj.init(
         scene,
-        1e12,
+        1e4,
+        new Vector(45, 12),
+        [new Vector(-17, 1), new Vector(0, 3), new Vector(17, 1), new Vector(17, -1), new Vector(0, -3), new Vector(-17, -1)]
+    );
+    obj.rotationSpeed = -4 * Math.PI;
+    obj.inertia = 1e5;
+    scene.addObject(obj);
+
+    obj = new SolidObject();
+    obj.init(
+        scene,
+        1e20,
         new Vector(0, -20),
-        [new Vector(-200, 200), new Vector(-5, 200), new Vector(-5, 198), new Vector(-198, 198), new Vector(-198, 5), new Vector(198, 5), new Vector(198, 198), new Vector(5, 198), new Vector(5, 200), new Vector(200, 200), new Vector(200, -5), new Vector(-200, -5)]
+        [new Vector(-150, 100), new Vector(-1, 100), new Vector(-1, 96), new Vector(-148, 96), new Vector(-148, 1), new Vector(148, 1), new Vector(148, 96), new Vector(1, 96), new Vector(1, 100), new Vector(150, 100), new Vector(150, -5), new Vector(-150, -5)]
     );
     obj.rotationSpeed = 0;
     obj.speed.x = 0;
@@ -152,7 +189,7 @@ var initScene = function (scene) {
 
     //var start = {"objects":[{"pos":{"x":44.85374757752617,"y":-2.0234338731756045},"speed":{"x":-2.0558814858107635,"y":-35.59344911062198},"rotation":-8.405652856925407,"rotationSpeed":1.5670926952160282},{"pos":{"x":60.21094173842708,"y":-2.5110403415080116},"speed":{"x":-0.8994663978912935,"y":-2.483142486320145},"rotation":-0.29311978283716184,"rotationSpeed":0.33287448434602596},{"pos":{"x":92.7943882429746,"y":5.972687956161973},"speed":{"x":-0.3538919143269428,"y":-0.4081325705471316},"rotation":-4.685186585176324,"rotationSpeed":0.060045859629349496},{"pos":{"x":76.95168327022668,"y":-9.943628529888061},"speed":{"x":-0.47849744720424237,"y":0.15316826618633061},"rotation":9.41684694840285,"rotationSpeed":-0.09422705716668306},{"pos":{"x":90.99084968809855,"y":-6.999004894917081},"speed":{"x":-0.024362541171445942,"y":-0.4989581757982498},"rotation":9.424236843555272,"rotationSpeed":0.0021831044808638582},{"pos":{"x":-71.328116217393,"y":28.72185532206116},"speed":{"x":-1.1250180403012386,"y":4.607258760518487},"rotation":117.382377168653,"rotationSpeed":3.7387635549581617},{"pos":{"x":5.5703601671429e-7,"y":-20.000003222771262},"speed":{"x":4.263046901240756e-8,"y":-2.761435187086772e-7},"rotation":-6.490356378026792e-9,"rotationSpeed":-4.3040652732307507e-10}],"cps":[{"e":[6,4],"p":[4,1]},{"e":[6,4],"p":[3,0]},{"e":[6,4],"p":[1,2]},{"e":[6,5],"p":[4,0]},{"e":[6,4],"p":[3,1]},{"e":[1,1],"p":[3,2]},{"e":[6,5],"p":[4,5]},{"e":[2,4],"p":[4,4]},{"e":[6,5],"p":[2,4]},{"e":[1,3],"p":[0,1]},{"e":[3,3],"p":[4,2]},{"e":[4,2],"p":[3,3]}]}
 
-    var start = {"objects":[{"pos":{"x":80.69612136544737,"y":4.970810263855765},"speed":{"x":-10.371675302054934,"y":1.028351504216648},"rotation":5.0168280574681186,"rotationSpeed":0.48936331202333166},{"pos":{"x":-82.81646428793007,"y":1.4719027477837356},"speed":{"x":13.520838396477734,"y":-9.45161969006772},"rotation":87.103185807559,"rotationSpeed":2.070642630263654},{"pos":{"x":45.12331129871436,"y":-9.47989500377682},"speed":{"x":-418.00744825615385,"y":-77.80985587619415},"rotation":21.912537140745357,"rotationSpeed":27.71690306786273},{"pos":{"x":92.73046197669615,"y":-7.999214591695361},"speed":{"x":-0.0000036315312737640476,"y":-0.10008558000375294},"rotation":4.712389816396962,"rotationSpeed":3.5123678563754275e-7},{"pos":{"x":78.0840254737038,"y":-7.999340991509639},"speed":{"x":-0.7096168100250473,"y":-0.10009195527078868},"rotation":20.420375915026373,"rotationSpeed":0.0058530928095010416},{"pos":{"x":14.849682784982827,"y":-7.999279952794504},"speed":{"x":28.048592092526494,"y":-0.10008912220877003},"rotation":20.420353084345983,"rotationSpeed":-0.0013996559471111086},{"pos":{"x":-44.99851552349747,"y":14.857500146867624},"speed":{"x":0.0011294762814591745,"y":1.1640500560584244},"rotation":195.85364566498757,"rotationSpeed":0.10817721878720327},{"pos":{"x":45.00020577092308,"y":12.041285445626933},"speed":{"x":-0.005422338943345738,"y":0.009540341910948564},"rotation":-224.34546937332632,"rotationSpeed":-12.319017168167068},{"pos":{"x":-1.8516661334234674e-7,"y":-20.00029211550398},"speed":{"x":4.693753650699376e-7,"y":-0.00011760223053649269},"rotation":8.360122728258928e-7,"rotationSpeed":3.4532618527275394e-7}],"cps":[{"e":[8,4],"p":[3,1]},{"e":[8,4],"p":[5,0]},{"e":[8,4],"p":[5,5]},{"e":[8,4],"p":[3,2]},{"e":[8,4],"p":[4,0]},{"e":[8,4],"p":[4,5]},{"e":[8,4],"p":[2,0]},{"e":[4,2],"p":[0,4]},{"e":[2,3],"p":[7,0]}]};
+    var start = {"objects":[{"pos":{"x":12.976650818980104,"y":-1.6186274877287732},"speed":{"x":10.994235260682355,"y":-15.47996769789834},"rotation":3.1041343547124294,"rotationSpeed":-1.5246591618331302},{"pos":{"x":-39.78829141086724,"y":-4.962439922468965},"speed":{"x":-0.16785468239485107,"y":-0.12656169679809362},"rotation":-0.0037463474782438613,"rotationSpeed":-0.013665117451664665},{"pos":{"x":-22.802418574127003,"y":-9.999069959895488},"speed":{"x":-0.009202735452588463,"y":-0.3486014162847799},"rotation":-6.283180744698451,"rotationSpeed":0.0023042228430198426},{"pos":{"x":-13.024348917123286,"y":-6.857255636969765},"speed":{"x":-2.455969342072375,"y":0.40077449231229534},"rotation":1.8623384213532876,"rotationSpeed":0.277384866213333},{"pos":{"x":24.187216103662724,"y":-7.996988352878163},"speed":{"x":17.67715233378342,"y":-0.13549608178770473},"rotation":4.712725892795033,"rotationSpeed":0.0778808807558583},{"pos":{"x":24.936560137991762,"y":-7.999070491809371},"speed":{"x":17.106409128076976,"y":-0.4125032578463499},"rotation":4.712382427644317,"rotationSpeed":-0.005774999025104404},{"pos":{"x":24.101436196258916,"y":-7.999070498690058},"speed":{"x":16.58586557490805,"y":-0.6376803171073485},"rotation":4.712382427644598,"rotationSpeed":0.005485756324331757},{"pos":{"x":24.163354692364912,"y":-7.811388171840408},"speed":{"x":18.46219491272092,"y":0.5426266966848048},"rotation":4.679425841098807,"rotationSpeed":-0.6031767376655148},{"pos":{"x":1.355432001522966,"y":-7.572190400714056},"speed":{"x":-0.6944760430234936,"y":-0.02892717593782257},"rotation":2.7198151626157094,"rotationSpeed":-0.24660946927003055},{"pos":{"x":-66.81247902620814,"y":-12.019587228132119},"speed":{"x":-0.10980056761658447,"y":-0.38498427578404365},"rotation":12.683481073905687,"rotationSpeed":0.026644605233299392},{"pos":{"x":-0.0000010456754155795684,"y":-20.000037892249733},"speed":{"x":-9.645276167842677e-8,"y":-0.000003422645284896908},"rotation":8.240889319563341e-9,"rotationSpeed":9.623437853070627e-10}],"cps":[{"e":[10,4],"p":[9,5]},{"e":[10,4],"p":[9,4]},{"e":[10,4],"p":[2,3]},{"e":[10,4],"p":[2,4]},{"e":[10,4],"p":[6,3]},{"e":[10,4],"p":[5,3]},{"e":[10,4],"p":[1,3]},{"e":[10,4],"p":[4,2]},{"e":[10,4],"p":[1,2]},{"e":[10,4],"p":[6,2]},{"e":[10,4],"p":[7,2]},{"e":[10,4],"p":[5,2]},{"e":[10,4],"p":[8,1]},{"e":[10,4],"p":[4,3]},{"e":[10,4],"p":[3,0]},{"e":[10,4],"p":[8,0]},{"e":[1,3],"p":[9,3]},{"e":[2,4],"p":[1,2]},{"e":[3,0],"p":[2,3]},{"e":[2,2],"p":[3,0]},{"e":[6,4],"p":[0,1]},{"e":[4,4],"p":[0,1]},{"e":[7,4],"p":[0,1]},{"e":[3,2],"p":[8,2]},{"e":[0,2],"p":[8,5]},{"e":[3,0],"p":[2,2]}]};
 
 /*
      for (var i = 0; i < start.objects.length; i++) {
@@ -180,13 +217,15 @@ var initScene = function (scene) {
     scene.view.update();
 
     scene.stepCallback = function (object, dt) {
-        if (object.index < scene.objects.length - 1) {
+        if (object.index < scene.objects.length - 3) {
             //object.addSpeed(object.speed.x * -.01 * dt, object.speed.y * -.01 * dt, object.rotationSpeed * -.01);
-            object.addSpeed(0, -20 * dt, 0);
+            object.addSpeed(0, -19 * dt, 0);
         }
 
-        if (object.index == 0) {
-//            object.applyImpulse(new Vector(0, -5), new Vector(0, 1), -60);
+        if (object.index == scene.objects.length - 2) {
+            if (scene.objects[scene.objects.length - 2].rotationSpeed < 10) {
+                object.addSpeed(0, 0, .1, false);
+            }
         }
 
     };
@@ -195,24 +234,24 @@ var initScene = function (scene) {
 var keys = {};
 var keyTimeout = function () {
     if (keys['37']) {
-        scene.objects[0].applyImpulse(new Vector(0, -5), new Vector(1, 0), 150);
-        scene.objects[0].applyImpulse(new Vector(0, 0), new Vector(1, 0), -150);
+        scene.objects[0].applyImpulse(new Vector(0, -5), new Vector(1, 0), 450);
+        scene.objects[0].applyImpulse(new Vector(0, 0), new Vector(1, 0), -450);
     }
     if (keys['38']) {
-        scene.objects[0].applyImpulse(new Vector(0, -5), new Vector(0, 1), 250);
+        scene.objects[0].applyImpulse(new Vector(0, -5), new Vector(0, 1), 450);
     }
     if (keys['39']) {
-        scene.objects[0].applyImpulse(new Vector(0, -5), new Vector(1, 0), -150);
-        scene.objects[0].applyImpulse(new Vector(0, 0), new Vector(1, 0), 150);
+        scene.objects[0].applyImpulse(new Vector(0, -5), new Vector(1, 0), -450);
+        scene.objects[0].applyImpulse(new Vector(0, 0), new Vector(1, 0), 450);
     }
     if (keys['40']) {
-        scene.objects[0].applyImpulse(new Vector(0, -5), new Vector(0, 1), -450);
+        scene.objects[0].applyImpulse(new Vector(0, -5), new Vector(0, 1), -400);
     }
     if (keys['90']) {
-        scene.objects[0].applyImpulse(new Vector(0, 0), new Vector(1, 0), -60);
+        scene.objects[0].applyImpulse(new Vector(0, 0), new Vector(1, 0), -300);
     }
     if (keys['88']) {
-        scene.objects[0].applyImpulse(new Vector(0, 0), new Vector(1, 0), 60);
+        scene.objects[0].applyImpulse(new Vector(0, 0), new Vector(1, 0), 300);
     }
     setTimeout(keyTimeout, 20);
 };

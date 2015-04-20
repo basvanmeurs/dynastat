@@ -95,6 +95,166 @@ var SolidObject = function() {
     this.addedRotationSpeed = 0;
 
     /**
+     * If this is a child object, the parent it belongs to.
+     * @type {SolidObject}
+     */
+    this.parent = null;
+
+    /**
+     * The mount point on the parent, relative to the CM.
+     * @type {Vector}
+     */
+    this.parentMountPoint = null;
+
+    /**
+     * The mount point on the child, relative to the CM.
+     * @type {Vector}
+     */
+    this.childMountPoint = null;
+
+    /**
+     * Initializes the object with the specified data.
+     * @param {Scene} scene
+     * @param {number} mass
+     * @param {Vector} position
+     * @param {Vector[]} cornerPointCoordinates
+     */
+    this.init = function(scene, mass, position, cornerPointCoordinates) {
+        var i;
+        this.scene = scene;
+        this.mass = mass;
+        this.position = position;
+        this.cornerPoints = [];
+        for (i = 0; i < cornerPointCoordinates.length; i++) {
+            var point = new CornerPoint(i, cornerPointCoordinates[i]);
+            this.cornerPoints.push(point);
+        }
+
+        // Set 'next' corner points.
+        for (i = 0; i < this.cornerPoints.length - 1; i++) {
+            this.cornerPoints[i].setNext(this.cornerPoints[i + 1]);
+        }
+        this.cornerPoints[this.cornerPoints.length - 1].setNext(this.cornerPoints[0]);
+
+        // Set 'previous' corner points.
+        for (i = 1; i < this.cornerPoints.length; i++) {
+            this.cornerPoints[i].setPrevious(this.cornerPoints[i - 1]);
+        }
+        this.cornerPoints[0].setPrevious(this.cornerPoints[this.cornerPoints.length - 1]);
+
+        this.updateCornerPoints();
+
+        this.estimateInertia();
+    };
+
+    /**
+     * Initializes the object with the specified data.
+     * @param {Scene} scene
+     * @param {number} mass
+     * @param {Vector[]} cornerPointCoordinates
+     */
+    this.initChild = function(scene, mass, parent, parentMountPoint, childMountPoint, cornerPointCoordinates) {
+        var i;
+        this.scene = scene;
+        this.mass = mass;
+        this.parent = parent;
+        this.parentMountPoint = parentMountPoint;
+        this.childMountPoint = childMountPoint;
+
+        this.cornerPoints = [];
+        for (i = 0; i < cornerPointCoordinates.length; i++) {
+            var point = new CornerPoint(i, cornerPointCoordinates[i]);
+            this.cornerPoints.push(point);
+        }
+
+        // Set 'next' corner points.
+        for (i = 0; i < this.cornerPoints.length - 1; i++) {
+            this.cornerPoints[i].setNext(this.cornerPoints[i + 1]);
+        }
+        this.cornerPoints[this.cornerPoints.length - 1].setNext(this.cornerPoints[0]);
+
+        // Set 'previous' corner points.
+        for (i = 1; i < this.cornerPoints.length; i++) {
+            this.cornerPoints[i].setPrevious(this.cornerPoints[i - 1]);
+        }
+        this.cornerPoints[0].setPrevious(this.cornerPoints[this.cornerPoints.length - 1]);
+
+        this.position = this.getChildPosition();
+
+        this.updateCornerPoints();
+
+        this.estimateInertia();
+    };
+
+    /**
+     * Sets the time.
+     * @param {Number} t
+     */
+    this.setT = function(t) {
+        if (this.parent) {
+            // The parent must have the same time in order to be able to calculate the correct position.
+            this.parent.setT(t);
+        }
+
+        var dt = t - this.t;
+        this.t = t;
+        if (dt != 0) {
+            this.rotation += this.rotationSpeed * dt;
+            this.boundingBox = null;
+            this.rotationCosSin = null;
+
+            if (!this.parent) {
+                this.position.x += this.speed.x * dt;
+                this.position.y += this.speed.y * dt;
+            } else {
+                //this.position.x += this.speed.x * dt;
+                //this.position.y += this.speed.y * dt;
+                this.position = this.getChildPosition();
+            }
+
+            // Update all absolute positions of the corner points.
+            this.updateCornerPoints();
+        }
+    };
+
+    /**
+     * Returns the child position (absolute).
+     */
+    this.getChildPosition = function() {
+        var coords = this.parent.getAbsoluteCoordinates(this.parentMountPoint);
+        var mp = this.getInverseRotatedCoordinates(this.childMountPoint);
+        coords = coords.sub(mp);
+        return coords;
+    };
+
+    /**
+     * Confirms the time. After calling this, the time can't be reversed.
+     * @param t
+     */
+    this.confirmT = function(t) {
+        var ft = t - this.confirmedT;
+        this.confirmedT = t;
+        this.scene.stepCallback(this, ft);
+    };
+
+    /**
+     * Updates the absolute coordinates of the corner points.
+     */
+    this.updateCornerPoints = function() {
+        for (var i = 0; i < this.cornerPoints.length; i++) {
+            this.updateCornerPoint(this.cornerPoints[i]);
+        }
+    };
+
+    /**
+     * Updates the specified corner point.
+     * @param {CornerPoint} cp
+     */
+    this.updateCornerPoint = function(cp) {
+        cp.setAbsoluteCoordinates(this.getAbsoluteCoordinates(cp.coordinates));
+    };
+
+    /**
      * Adds speed.
      * This method should be used instead of directly modifying this.speed and this.rotationSpeed so that the physics
      * keep working correctly.
@@ -178,63 +338,6 @@ var SolidObject = function() {
     };
 
     /**
-     * Takes a time step.
-     * @param dt
-     * @param {Boolean} [doNotUpdateCornerPoints]
-     */
-    this.step = function(dt, doNotUpdateCornerPoints) {
-        this.t += dt;
-        this.position.x += this.speed.x * dt;
-        this.position.y += this.speed.y * dt;
-        this.rotation += this.rotationSpeed * dt;
-        this.boundingBox = null;
-        this.rotationCosSin = null;
-
-        // Update all absolute positions of the corner points.
-        if (!doNotUpdateCornerPoints) {
-            this.updateCornerPoints();
-        }
-    };
-
-    /**
-     * Sets the time.
-     * @param {Number} t
-     */
-    this.setT = function(t) {
-        var dt = t - this.t;
-        if (dt != 0) {
-            this.step(dt);
-        }
-    };
-
-    /**
-     * Confirms the time. After calling this, the time can't be reversed.
-     * @param t
-     */
-    this.confirmT = function(t) {
-        var ft = t - this.confirmedT;
-        this.confirmedT = t;
-        this.scene.stepCallback(this, ft);
-    };
-
-    /**
-     * Updates the absolute coordinates of the corner points.
-     */
-    this.updateCornerPoints = function() {
-        for (var i = 0; i < this.cornerPoints.length; i++) {
-            this.updateCornerPoint(this.cornerPoints[i]);
-        }
-    };
-
-    /**
-     * Updates the specified corner point.
-     * @param {CornerPoint} cp
-     */
-    this.updateCornerPoint = function(cp) {
-        cp.setAbsoluteCoordinates(this.getAbsoluteCoordinates(cp.coordinates));
-    };
-
-    /**
      * Seeks and returns a collision between so1 and so2 in the specified time frame.
      * @param {SolidObject} that
      * @param {Number} time
@@ -248,21 +351,17 @@ var SolidObject = function() {
      *   Both of the solid objects will be progressed to either maxTime or the collision time.
      */
     this.getCollision = function(that, time, maxTime) {
-        var i, intersections;
-
-        // Check if non-collision at start time.
-        this.setT(time);
-        that.setT(time);
-        intersections = this.getIntersections(that);
-        if (intersections.length > 0) {
-            // Intersection at the start: do not seek for a collision.
+        if (this.parent == that || that.parent == this) {
             return [];
         }
+
+        var intersections;
 
         // Go to the end of the time frame.
         this.setT(maxTime);
         that.setT(maxTime);
         intersections = this.getIntersections(that);
+
         if (intersections.length == 0) {
             // No collision at the end: we assume that there was non collision at all during the time frame.
             return [];
@@ -276,7 +375,9 @@ var SolidObject = function() {
             var t, is, collisionPoints;
             var recursionCounter = 0;
             var inc = 0;
-            while(true) {
+
+            // Because intersections might have already been found, we'll use a recursion counter to prevent infinite looping.
+            while(recursionCounter < 100) {
                 recursionCounter++;
 
                 t = 0.5 * (negativeT + positiveT);
@@ -312,6 +413,8 @@ var SolidObject = function() {
                     }
                 }
             }
+
+            return [];
         }
     };
 
@@ -403,6 +506,17 @@ var SolidObject = function() {
         if (collisionPoints.length == 0) {
             return [];
         }
+
+        // Filter out collision points that are already known.
+        var self = this;
+        collisionPoints = collisionPoints.filter(function (collisionPoint) {
+            for (i = 0; i < self.scene.collisionPoints.length; i++) {
+                if (self.scene.collisionPoints[i].equals(collisionPoint)) {
+                    return false;
+                }
+            }
+            return true;
+        });
 
         // Finally, filter double collision points.
         var done = {};
@@ -505,38 +619,23 @@ var SolidObject = function() {
     };
 
     /**
-     * Initializes the object with the specified data.
-     * @param {Scene} scene
-     * @param {number} mass
-     * @param {Vector} position
-     * @param {Vector[]} cornerPointCoordinates
+     * Returns the rotated object coordinates for the relative coordinates.
+     * @param {Vector} coordinates
+     * @return {Vector}
      */
-    this.init = function(scene, mass, position, cornerPointCoordinates) {
-        var i;
-        this.scene = scene;
-        this.mass = mass;
-        this.position = position;
-        this.cornerPoints = [];
-        for (i = 0; i < cornerPointCoordinates.length; i++) {
-            var point = new CornerPoint(i, cornerPointCoordinates[i]);
-            this.cornerPoints.push(point);
-        }
+    this.getRotatedCoordinates = function(coordinates) {
+        var v = this.getRotationCosSin();
+        return new Vector(coordinates.x * v.cos + coordinates.y * v.sin, coordinates.x * v.sin - coordinates.y * v.cos);
+    };
 
-        // Set 'next' corner points.
-        for (i = 0; i < this.cornerPoints.length - 1; i++) {
-            this.cornerPoints[i].setNext(this.cornerPoints[i + 1]);
-        }
-        this.cornerPoints[this.cornerPoints.length - 1].setNext(this.cornerPoints[0]);
-
-        // Set 'previous' corner points.
-        for (i = 1; i < this.cornerPoints.length; i++) {
-            this.cornerPoints[i].setPrevious(this.cornerPoints[i - 1]);
-        }
-        this.cornerPoints[0].setPrevious(this.cornerPoints[this.cornerPoints.length - 1]);
-
-        this.updateCornerPoints();
-
-        this.estimateInertia();
+    /**
+     * Returns the inversely rotated object coordinates for the relative coordinates.
+     * @param {Vector} coordinates
+     * @return {Vector}
+     */
+    this.getInverseRotatedCoordinates = function(coordinates) {
+        var v = this.getRotationCosSin();
+        return new Vector(coordinates.x * v.cos - coordinates.y * v.sin, coordinates.x * v.sin + coordinates.y * v.cos);
     };
 
     /**

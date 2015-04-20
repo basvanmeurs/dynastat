@@ -40,5 +40,13 @@ var CollisionPoint = function(pointSolidObject, point, edgeSolidObject, edge) {
     this.toString = function() {
         var str = "CollisionPoint[" + this.point.getAbsoluteCoordinates().toString() + ", " + this.edge.getEdgeString() + " | " + this.point.index + ";" + this.edge.index + "]";
         return str;
-    }
+    };
+
+    /**
+     * Returns true if this collision point is the same as that collision point.
+     * @param {CollisionPoint} that
+     */
+    this.equals = function(that) {
+        return (this.point == that.point) && (this.edge == that.edge);
+    };
 };
