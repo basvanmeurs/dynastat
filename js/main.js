@@ -19,34 +19,36 @@ var initScene = function (scene) {
         5,
         parent,
         new Vector(0, -5),
-        new Vector(0, 10),
-        [new Vector(-3, -15), new Vector(-3, 15), new Vector(3, 15), new Vector(3, -15)]
+        new Vector(0, 4),
+        [new Vector(-3, -5), new Vector(-1, 5), new Vector(1, 5), new Vector(3, -5)]
     );
     obj.inertia = 100;
-    scene.addObject(obj);
-
-    obj = new SolidObject();
-    obj.init(
-        scene,
-        200,
-        new Vector(30, 50),
-        [new Vector(-5, -6), new Vector(-5, 8), new Vector(5, 8), new Vector(5, -6)]
-    );
-    obj.rotationSpeed = -.125 * Math.PI;
-    obj.inertia = 5000;
     scene.addObject(obj);
 
     var parent = obj;
     obj = new SolidObject();
     obj.initChild(
         scene,
-        10,
+        5,
         parent,
-        new Vector(0, -5),
-        new Vector(0, 10),
-        [new Vector(-3, -15), new Vector(-3, 15), new Vector(3, 15), new Vector(3, -15)]
+        new Vector(0, -4),
+        new Vector(0, 4),
+        [new Vector(-3, -5), new Vector(-1, 5), new Vector(1, 5), new Vector(3, -5)]
     );
-    obj.inertia = 10;
+    obj.inertia = 100;
+    scene.addObject(obj);
+
+    var parent = obj;
+    obj = new SolidObject();
+    obj.initChild(
+        scene,
+        50,
+        parent,
+        new Vector(0, -4),
+        new Vector(0, 4),
+        [new Vector(-3, -5), new Vector(-1, 5), new Vector(1, 5), new Vector(3, -5)]
+    );
+    obj.inertia = 1000;
     scene.addObject(obj);
 
     obj = new SolidObject();
@@ -70,19 +72,23 @@ var initScene = function (scene) {
     obj.speed.x = 0;
     obj.inertia = 10000;
     scene.addObject(obj);
-
-
-    obj = new SolidObject();
-    obj.init(
-        scene,
-        100,
-        new Vector(29, 30),
-        [new Vector(-7, 5), new Vector(7, 5), new Vector(7, -5), new Vector(-7, -5)]
-    );
-    obj.rotationSpeed = 1.125 * Math.PI;
-    obj.speed.x = 0;
-    obj.inertia = 10000;
-    scene.addObject(obj);
+/*
+    for (var i = 0; i < 5; i++) {
+        obj = new SolidObject();
+        obj.init(
+            scene,
+            100,
+            new Vector(29, 30),
+            [new Vector(-7, 5), new Vector(7, 5), new Vector(7, -5), new Vector(-7, -5)]
+        );
+        obj.rotationSpeed = 1.125 * Math.PI;
+        obj.position.x += Math.random() * 100 - 50;
+        obj.position.y += Math.random() * 100 - 50;
+        obj.speed.x = 0 + Math.random() * 40 - 20;
+        obj.speed.y = 0 + Math.random() * 40 - 20;
+        obj.inertia = 100;
+        scene.addObject(obj);
+    }*/
 
     obj = new SolidObject();
     obj.init(
@@ -219,7 +225,7 @@ var initScene = function (scene) {
     scene.stepCallback = function (object, dt) {
         if (object.index < scene.objects.length - 3) {
             //object.addSpeed(object.speed.x * -.01 * dt, object.speed.y * -.01 * dt, object.rotationSpeed * -.01);
-            object.addSpeed(0, -19 * dt, 0);
+            object.addSpeed(0, -9 * dt, 0);
         }
 
         if (object.index == scene.objects.length - 2) {
@@ -229,6 +235,7 @@ var initScene = function (scene) {
         }
 
     };
+    scene.getIntersectionCounter = 0;
 };
 
 var keys = {};

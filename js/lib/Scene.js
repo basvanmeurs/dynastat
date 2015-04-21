@@ -71,6 +71,7 @@ var Scene = function() {
             count++;
             t = this.step(maxT - t);
         }
+
         setTimeout(function() {
             self.simulate();
         }, Scene.TIMESTEP * 1000);
@@ -89,7 +90,7 @@ var Scene = function() {
         }
 
         // Correct the speeds in the current model.
-        dt = this.speedAdjuster.adjust(dt);
+        this.speedAdjuster.adjust(dt);
 
         // Progress the model.
         var info = this.progress(dt);
@@ -98,12 +99,41 @@ var Scene = function() {
         this.setT(info.t);
 
         // Add the newly found collision points.
-        for (var i = 0; i < info.collisions.length; i++) {
-            // Remove duplicates in collision points.
+        var i;
+        var n = info.collisions.length;
+        for (i = 0; i < n; i++) {
             this.collisionPoints.push(info.collisions[i]);
         }
 
         return info.t;
+    };
+
+    /**
+     * Returns the subject without the filtered collision points.
+     * @param {CollisionPoint[]} subject
+     * @param {CollisionPoint[]} filtered
+     */
+    this.getFilteredCollisionPoints = function(subject, filtered) {
+        var i, j;
+
+        var newSubject = [];
+        var n1 = subject.length;
+        var n2 = filtered.length;
+        for (i = 0; i < n1; i++) {
+            for (j = 0; j < n2; j++) {
+                if (subject[i].equals(filtered[j])) {
+                    // Exists. Go to next item.
+                    i++;
+                    j = 0;
+                    if (i == n1) {
+                        return newSubject;
+                    }
+                }
+            }
+            newSubject.push(subject[i]);
+        }
+
+        return newSubject;
     };
 
     /**
@@ -116,6 +146,12 @@ var Scene = function() {
     this.progress = function(dt) {
         var i, j;
 
+        // Detect overflowing.
+        dt = this.getSolutionMaxDt(dt);
+
+        //@todo: for all collision points, if dist < 0, check for both point-edges if they intersect the other SO.
+        // if not, add additional collision points to the list.
+
         // Detect collision.
         var maxT = this.t + dt;
         var minT = null;
@@ -123,14 +159,20 @@ var Scene = function() {
         for (i = 0; i < this.objects.length; i++) {
             for (j = i + 1; j < this.objects.length; j++) {
                 var cps = this.objects[i].getCollision(this.objects[j], this.t, maxT);
-                if (cps.length > 0) {
-                    if ((minT == null) || (this.objects[i].t < minT)) {
-                        collisionPoints = cps;
-                        minT = this.objects[i].t;
+
+                if (cps != null && cps.length > 0) {
+                    // Remove collision points that were already active and known.
+                    cps = this.getFilteredCollisionPoints(cps, this.collisionPoints);
+                    if (cps.length > 0) {
+                        if ((minT == null) || (this.objects[i].t < minT)) {
+                            collisionPoints = cps;
+                            minT = this.objects[i].t;
+                        }
                     }
                 }
             }
         }
+
         return {t: minT ? minT : maxT, collisions: collisionPoints};
     };
 
@@ -159,6 +201,61 @@ var Scene = function() {
         this.t = 0;
         this.nextObjectIndex = 1;
     };
+
+    /**
+     * Finds the max dt at which at least no collision point penetrates the edge object for more than 10cm.
+     * @return {Number}
+     */
+   this.getSolutionMaxDt = function(dt) {
+        var steps = 0;
+        var i, cp;
+
+       var startDists = [];
+       for (i = 0; i < this.collisionPoints.length; i++) {
+           cp = this.collisionPoints[i];
+           cp.pointSolidObject.setT(this.t);
+           cp.edgeSolidObject.setT(this.t);
+           startDists.push(cp.edge.getPointDistanceRelativeToThis(cp.point));
+       }
+
+       while(true) {
+            // Try out the newly applied speeds.
+            var maxDistDiff = 0;
+            for (i = 0; i < this.collisionPoints.length; i++) {
+                cp = this.collisionPoints[i];
+
+                // Fast-forward.
+                cp.pointSolidObject.setT(this.t + dt);
+                cp.edgeSolidObject.setT(this.t + dt);
+
+                // Get y relative to edge.
+                var dist2 = cp.edge.getPointDistanceRelativeToThis(cp.point);
+
+                if (dist2 < 0) {
+                    var d = dist2 - startDists[i];
+                    maxDistDiff = Math.min(d, maxDistDiff);
+                }
+            }
+
+            if (maxDistDiff > -1 * Scene.COLLISION_PROXIMITY) {
+                // Done!
+                break;
+            } else {
+                // Decrease time step for next try (even if it may not be necessary).
+                dt = dt * .5;
+                steps++;
+                if (steps > 5) {
+                    logSituation();
+                    console.error("can't fix look-ahead problems in frame " + scene.frame);
+
+                    // Let's hope this won't break everything.
+                    break;
+                }
+            }
+        }
+        return dt;
+    };
+
 
 };
 

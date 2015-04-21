@@ -72,8 +72,7 @@ var View = function(scene) {
         }
 
         // Show collision points.
-
-        for (i = 0; i < this.scene.collisionPoints.length; i++) {
+/*        for (i = 0; i < this.scene.collisionPoints.length; i++) {
             var cp = this.scene.collisionPoints[i];
             var c = cp.point.getAbsoluteCoordinates();
             c = this.translateCoords(c);
@@ -97,7 +96,7 @@ var View = function(scene) {
             this.context.lineWidth = 1;
 
             this.context.strokeText("" + i, c.x + d.x, c.y + d.y);
-        }
+        }*/
 
         this.context.strokeText("" + scene.frame, 20, 20);
     };

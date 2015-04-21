@@ -273,8 +273,7 @@ var SpeedAdjuster = function(scene) {
     /**
      * Adjusts the speeds in the model.
      * @param dt
-     * @returns {Number}
-     *   The corrected dt during which extrapolation of speeds is safe.
+     *   The max time step to be expected. Used for speed compensation.
      */
     this.adjust = function(dt) {
         this.frameDt = dt;
@@ -309,11 +308,6 @@ var SpeedAdjuster = function(scene) {
             var obj = group.adjust();
             var newInfoObjects = obj.info;
 
-            if (obj.dt < dt) {
-                // Adjust max dt.
-                dt = obj.dt;
-            }
-
             // Combine point info for look-ahead correction.
             newInfo = newInfo.concat(newInfoObjects);
         }
@@ -321,8 +315,6 @@ var SpeedAdjuster = function(scene) {
         // Set new collision points.
         this.scene.collisionPoints = newInfo.map(function(item) {return item.cp});
         this.info = newInfo;
-
-        return dt;
     };
 
 };
@@ -391,10 +383,10 @@ SpeedAdjusterGroup.prototype.getSolverItems = function() {
             } else {
                 // In case that there is a distance between the edge and the point, let some of the speed
                 // remain so that the distance will decrease.
-                if (this.info[i].dist > .1 * Scene.COLLISION_PROXIMITY) {
+                if (this.info[i].dist > Scene.COLLISION_PROXIMITY) {
 
                     // Get required speed in order to compensate during dt timeframe.
-                    var s = (.1 * Scene.COLLISION_PROXIMITY - this.info[i].dist) / this.speedAdjuster.frameDt;
+                    var s = (Scene.COLLISION_PROXIMITY - this.info[i].dist) / this.speedAdjuster.frameDt;
 
                     if (vd > 0) {
                         d = -vd;
@@ -412,7 +404,7 @@ SpeedAdjusterGroup.prototype.getSolverItems = function() {
                         }
                         // Correct by applying extra impulse.
                         // Get required speed in order to compensate during dt timeframe.
-                        var s = (.1 * Scene.COLLISION_PROXIMITY - this.info[i].dist) / this.speedAdjuster.frameDt;
+                        var s = (Scene.COLLISION_PROXIMITY - this.info[i].dist) / this.speedAdjuster.frameDt;
                         d = s - vd;
                     } else {
                         d = -vd;
@@ -462,9 +454,6 @@ SpeedAdjusterGroup.prototype.adjust = function() {
     result = this.speedAdjuster.staticSolverEngine.getSolution();
     this.applyCollisionPointSpeeds(result);
 
-    // Get max dt.
-    var dt = this.getSolutionMaxDt();
-
     // Remove collision points that are no longer valid from all groups.
     var newInfos = [];
     for (i = 0; i < this.info.length; i++) {
@@ -475,54 +464,9 @@ SpeedAdjusterGroup.prototype.adjust = function() {
         }
     }
 
-    return {info: newInfos, dt: dt};
+    return {info: newInfos};
 };
 
-/**
- * Finds the max dt at which at least no collision point penetrates the edge object for more than 10cm.
- * @return {Number}
- */
-SpeedAdjusterGroup.prototype.getSolutionMaxDt = function() {
-    var dt = this.speedAdjuster.frameDt;
-    var steps = 0;
-    var i;
-
-    while(true) {
-
-        // Try out the newly applied speeds.
-        var maxDistDiff = 0;
-        for (i = 0; i < this.info.length; i++) {
-            if (!this.info[i].connection && !this.speedAdjuster.staticSolverEngine.killed[i]) {
-                var dist2 = this.progressCollisionPointPeek(this.info[i].cp, this.speedAdjuster.scene.t + dt);
-                if (dist2 < 0) {
-                    var d = dist2 - this.info[i].dist;
-                    maxDistDiff = Math.min(d, maxDistDiff);
-                }
-            }
-        }
-
-        if (maxDistDiff > -0.5 * Scene.COLLISION_PROXIMITY) {
-            // Done!
-            break;
-        } else {
-            // Decrease time step for next try (even if it may not be necessary).
-            dt = dt * .5;
-            steps++;
-            if (steps > 10) {
-                logSituation();
-                console.error("can't fix look-ahead problems in frame " + scene.frame);
-
-                // Let's hope this won't break everything.
-                break;
-            }
-        }
-        if (steps >= 5) {
-            console.log('serious look-ahead issue');
-        }
-    }
-
-    return dt;
-};
 
 /**
  * Applies the speed delta vector to the collision points.
@@ -596,39 +540,6 @@ SpeedAdjusterGroup.prototype.solve = function(items) {
         // This is not a show stopper.
     }
 };
-
-/**
- * Peeks into the future and returns the distance between the collision point and the collision edge.
- * @param {CollisionPoint} cp
- *   The collision point to 'peek' for.
- * @param t
- *   The peeking time.
- * @returns {number}
- *   This distance, in m. Negative means that the cp has penetrated the edge.
- */
-SpeedAdjusterGroup.prototype.progressCollisionPointPeek = function(cp, t) {
-    // Remember current situation.
-    cp.pointSolidObject.saveSituation();
-    cp.edgeSolidObject.saveSituation();
-
-    // Step ahead to dt.
-    cp.pointSolidObject.setT(t);
-    cp.pointSolidObject.updateCornerPoint(cp.point);
-
-    cp.edgeSolidObject.setT(t);
-    cp.edgeSolidObject.updateCornerPoint(cp.edge);
-    cp.edgeSolidObject.updateCornerPoint(cp.edge.next);
-
-    // Get y relative to edge.
-    var v = cp.edge.getPointDistanceRelativeToThis(cp.point);
-
-    // Step back.
-    cp.pointSolidObject.resetSituation();
-    cp.edgeSolidObject.resetSituation();
-
-    return v;
-};
-
 
 /**
  * Applies friction.

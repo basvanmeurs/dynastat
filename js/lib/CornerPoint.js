@@ -220,76 +220,54 @@ var CornerPoint = function(index, coordinates) {
      *   Index 0 = this (corner point), 1 = this.next, 2 = that, 3 = that.next.
      */
     this.getIntersection = function(that) {
-        if (this.checkCollisionBounds(that)) {
-            var coords = this.getEdgeCoordinatesRelativeToThis(that);
+        var coords = this.getEdgeCoordinatesRelativeToThis(that);
 
-            if ((coords.s.y > 0 && coords.e.y > 0) || (coords.s.y < 0 && coords.e.y < 0)) {
-                // No y-intersection.
-                return null;
-            }
-            if ((coords.s.x < 0 && coords.e.x < 0) || (coords.s.x > 1 && coords.e.x > 1)) {
-                // No x-intersection.
-                return null;
-            }
-
-            var dy = coords.e.y - coords.s.y;
-            if (dy == 0) {
-                // Edges are completely overlapping: we do not count this as intersection because there is no clear
-                // singular intersection point.
-                return null;
-            }
-
-            // Check if the intersection point lies within bounds.
-            var intersection = this.getIntersectionPoint(coords);
-            if ((intersection.thisEdge < 0) || (intersection.thisEdge > 1)) {
-                return null;
-            }
-
-            // Detect possible collision points.
-            var possibleCollisionPoints = [];
-
-            if ((coords.e.y <= 0) && (intersection.thisEdge * this.edgeLength < Scene.COLLISION_PROXIMITY)) {
-                // this
-                possibleCollisionPoints.push(0);
-            }
-
-            if ((coords.s.y <= 0) && ((1 - intersection.thisEdge) * this.edgeLength < Scene.COLLISION_PROXIMITY)) {
-                // this.next
-                possibleCollisionPoints.push(1);
-            }
-
-            if ((coords.s.y <= 0) && (intersection.thatEdge * that.edgeLength < Scene.COLLISION_PROXIMITY)) {
-                // that
-                possibleCollisionPoints.push(2);
-            }
-
-            if ((coords.e.y <= 0) && ((1 - intersection.thatEdge) * that.edgeLength < Scene.COLLISION_PROXIMITY)) {
-                // that.next
-                possibleCollisionPoints.push(3);
-            }
-
-            return possibleCollisionPoints;
-        } else {
-            // Bounds do not intersect: collision not possible.
+        if ((coords.s.y > 0 && coords.e.y > 0) || (coords.s.y < 0 && coords.e.y < 0)) {
+            // No y-intersection.
             return null;
         }
-    };
-
-    /**
-     * In case that the edges do NOT intersect, checks if the collision points are valid.
-     * A possible collision point is valid if they are still within collision proximity of the other edge.
-     * @param {Number[]} possibleCollisionPoints
-     *   As returned by edgesIntersect.
-     * @return {Boolean}
-     *   True if all collision points were valid.
-     */
-    this.getValidCollisionPoints = function(possibleCollisionPoints) {
-        for (var i = 0; i < possibleCollisionPoints.length; i++) {
-            var index = possibleCollisionPoints[i];
-            switch (index) {
-                case 0: //v1.
-            }
+        if ((coords.s.x < 0 && coords.e.x < 0) || (coords.s.x > 1 && coords.e.x > 1)) {
+            // No x-intersection.
+            return null;
         }
+
+        var dy = coords.e.y - coords.s.y;
+        if (dy == 0) {
+            // Edges are completely overlapping: we do not count this as intersection because there is no clear
+            // singular intersection point.
+            return null;
+        }
+
+        // Check if the intersection point lies within bounds.
+        var intersection = this.getIntersectionPoint(coords);
+        if ((intersection.thisEdge < 0) || (intersection.thisEdge > 1)) {
+            return null;
+        }
+
+        // Detect possible collision points.
+        var possibleCollisionPoints = [];
+
+        if ((coords.e.y <= 0) && (intersection.thisEdge * this.edgeLength < Scene.COLLISION_PROXIMITY)) {
+            // this
+            possibleCollisionPoints.push(0);
+        }
+
+        if ((coords.s.y <= 0) && ((1 - intersection.thisEdge) * this.edgeLength < Scene.COLLISION_PROXIMITY)) {
+            // this.next
+            possibleCollisionPoints.push(1);
+        }
+
+        if ((coords.s.y <= 0) && (intersection.thatEdge * that.edgeLength < Scene.COLLISION_PROXIMITY)) {
+            // that
+            possibleCollisionPoints.push(2);
+        }
+
+        if ((coords.e.y <= 0) && ((1 - intersection.thatEdge) * that.edgeLength < Scene.COLLISION_PROXIMITY)) {
+            // that.next
+            possibleCollisionPoints.push(3);
+        }
+
+        return possibleCollisionPoints;
     };
 
     /**

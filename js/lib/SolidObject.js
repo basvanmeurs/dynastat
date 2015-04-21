@@ -338,6 +338,34 @@ var SolidObject = function() {
     };
 
     /**
+     * Returns the subject without the filtered intersections.
+     * @param {Array[]} subject
+     * @param {Array[]} filtered
+     */
+    this.getFilteredIntersections = function(subject, filtered) {
+        var i, j;
+
+        var newSubject = [];
+        var n1 = subject.length;
+        var n2 = filtered.length;
+        for (i = 0; i < n1; i++) {
+            for (j = 0; j < n2; j++) {
+                if (subject[i][0] == filtered[j][0] && subject[i][1] == filtered[j][1]) {
+                    // Exists. Go to next item.
+                    i++;
+                    j = 0;
+                    if (i == n1) {
+                        return newSubject;
+                    }
+                }
+            }
+            newSubject.push(subject[i]);
+        }
+
+        return newSubject;
+    };
+
+    /**
      * Seeks and returns a collision between so1 and so2 in the specified time frame.
      * @param {SolidObject} that
      * @param {Number} time
@@ -352,7 +380,7 @@ var SolidObject = function() {
      */
     this.getCollision = function(that, time, maxTime) {
         if (this.parent == that || that.parent == this) {
-            return [];
+            return null;
         }
 
         var intersections;
@@ -360,16 +388,34 @@ var SolidObject = function() {
         // Go to the end of the time frame.
         this.setT(maxTime);
         that.setT(maxTime);
+
+        if (!this.checkCollisionBounds(that)) {
+            return null;
+        }
+
         intersections = this.getIntersections(that);
 
         if (intersections.length == 0) {
             // No collision at the end: we assume that there was non collision at all during the time frame.
-            return [];
+            return null;
         } else {
             var negativeT = time;
             var positiveT = maxTime;
 
             // We are sure that a collision occurs.
+
+            // Gather the intersections that already occur at start time; these may lead to infinite loops so we will remove them.
+            this.setT(time);
+            that.setT(time);
+            var startIntersections = this.getIntersections(that);
+
+            var hasStartIntersections = (startIntersections.length > 0);
+            if (hasStartIntersections) {
+                intersections = this.getFilteredIntersections(intersections, startIntersections);
+                if (intersections.length == 0) {
+                    return null;
+                }
+            }
 
             // Logaritmically search for it.
             var t, is, collisionPoints;
@@ -377,18 +423,31 @@ var SolidObject = function() {
             var inc = 0;
 
             // Because intersections might have already been found, we'll use a recursion counter to prevent infinite looping.
-            while(recursionCounter < 100) {
+            while(true) {
                 recursionCounter++;
+                if (recursionCounter > 20) {
+                    // Infinite loop. In this emergency situation it's best to ignore the collision altogether.
+                    console.log('infinite loop detected');
+                    return null;
+                }
 
                 t = 0.5 * (negativeT + positiveT);
                 this.setT(t);
                 that.setT(t);
-                is = this.getIntersections(that);
-                if (is.length == 0) {
+
+                is = null;
+                if (this.checkCollisionBounds(that)) {
+                    is = this.getIntersections(that);
+                    if (hasStartIntersections) {
+                        is = this.getFilteredIntersections(is, startIntersections);
+                    }
+                }
+                if (is == null || is.length == 0) {
                     negativeT = t;
 
                     // Check if collision is valid.
                     collisionPoints = this.getValidCollision(that, intersections);
+
                     if (collisionPoints.length > 0) {
                         return collisionPoints;
                     }
@@ -436,25 +495,23 @@ var SolidObject = function() {
     /**
      * Returns all edge intersections that are currently taking place between both solid objects.
      * @param {SolidObject} that
-     * @return {{thisCp: CornerPoint, thatCp: CornerPoint, pcps: Number[]}[]}
+     * @return {Array[]}
+     *   Each array contains another array with thisCp (corner point), thatCp (corner point) and pcps (array if numbers).
      *   The intersections; an empty array if there are no intersections at all.
      * @pre this.t == that.t, otherwise we're comparing bogus.
      */
     this.getIntersections = function(that) {
         var intersections = [];
 
-        if (!this.checkCollisionBounds(that)) {
-            // No intersections are possible.
-            return intersections;
-        }
-
         // Investigate all edge combinations.
         for (var i = 0; i < this.cornerPoints.length; i++) {
             for (var j = 0; j < that.cornerPoints.length; j++) {
-                var info = this.cornerPoints[i].getIntersection(that.cornerPoints[j]);
-                if (info != null) {
-                    // Intersection!
-                    intersections.push({thisCp: this.cornerPoints[i], thatCp: that.cornerPoints[j], pcps: info});
+                if (this.cornerPoints[i].checkCollisionBounds(that.cornerPoints[j])) {
+                    var info = this.cornerPoints[i].getIntersection(that.cornerPoints[j]);
+                    if (info != null) {
+                        // Intersection!
+                        intersections.push([this.cornerPoints[i], that.cornerPoints[j], info]);
+                    }
                 }
             }
         }
@@ -466,7 +523,7 @@ var SolidObject = function() {
      * Returns the collision info if the current non-intersection situation is a valid collision situation for the
      * previously found intersections.
      * @param {SolidObject} that
-     * @param {{thisCp: CornerPoint, thatCp: CornerPoint, pcps: Number[]}[]} intersections
+     * @param {Array[]} intersections
      * @return {CollisionPoint[]}
      *   The collision points; empty if there is no valid collision.
      * @pre This solid object is currently not intersecting.
@@ -478,7 +535,7 @@ var SolidObject = function() {
         for (i = 0; i < intersections.length; i++) {
             var intersection = intersections[i];
             // Get the valid collision points.
-            var pcps = intersection.thisCp.getValidPossibleCollisionPoints(intersection.thatCp, intersection.pcps);
+            var pcps = intersection[0].getValidPossibleCollisionPoints(intersection[1], intersection[2]);
 
             // If none, this collision is invalid.
             if (pcps.length > 0) {
@@ -487,16 +544,16 @@ var SolidObject = function() {
                 var cp;
                 switch (pcp) {
                     case 0:
-                        cp = new CollisionPoint(this, intersection.thisCp, that, intersection.thatCp);
+                        cp = new CollisionPoint(this, intersection[0], that, intersection[1]);
                         break;
                     case 1:
-                        cp = new CollisionPoint(this, intersection.thisCp.next, that, intersection.thatCp);
+                        cp = new CollisionPoint(this, intersection[0].next, that, intersection[1]);
                         break;
                     case 2:
-                        cp = new CollisionPoint(that, intersection.thatCp, this, intersection.thisCp);
+                        cp = new CollisionPoint(that, intersection[1], this, intersection[0]);
                         break;
                     case 3:
-                        cp = new CollisionPoint(that, intersection.thatCp.next, this, intersection.thisCp);
+                        cp = new CollisionPoint(that, intersection[1].next, this, intersection[0]);
                         break;
                 }
                 collisionPoints.push(cp);
@@ -504,19 +561,8 @@ var SolidObject = function() {
         }
 
         if (collisionPoints.length == 0) {
-            return [];
+            return collisionPoints;
         }
-
-        // Filter out collision points that are already known.
-        var self = this;
-        collisionPoints = collisionPoints.filter(function (collisionPoint) {
-            for (i = 0; i < self.scene.collisionPoints.length; i++) {
-                if (self.scene.collisionPoints[i].equals(collisionPoint)) {
-                    return false;
-                }
-            }
-            return true;
-        });
 
         // Finally, filter double collision points.
         var done = {};
