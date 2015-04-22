@@ -38,13 +38,13 @@ var SolidObject = function() {
      * The position of this object.
      * @type {Vector}
      */
-    this.position = new Vector(0, 0);
+    this.position = null;
 
     /**
      * The speed of this vector.
      * @type {Vector}
      */
-    this.speed = new Vector(0, 0);
+    this.speed = null;
 
     /**
      * The current rotational position.
@@ -97,6 +97,8 @@ var SolidObject = function() {
     /**
      * If this is a child object, the parent it belongs to.
      * @type {SolidObject}
+     * @private
+     * @note This may not be modified after the initChild call.
      */
     this.parent = null;
 
@@ -113,17 +115,39 @@ var SolidObject = function() {
     this.childMountPoint = null;
 
     /**
+     * If set to true, this child acts as part of the body of the parent in collision response but it may be rotated seperately (better performance).
+     * The rotation is NOT affected by collisions so must be managed by external impulse applications.
+     * @type {boolean}
+     */
+    this.fixed = false;
+
+    /**
+     * If this is a fixed child, the fixed parent, or it's fixed parent, or it's fixed grandparent, etc.
+     * @type {SolidObject}
+     */
+    this.fixedParentRoot = null;
+
+    /**
+     * The fixed children and descendants that have this solid object as their fixed root.
+     * @type {Array}
+     */
+    this.fixedDescendants = [];
+
+    /**
      * Initializes the object with the specified data.
      * @param {Scene} scene
      * @param {number} mass
+     * @param {number} inertia
      * @param {Vector} position
      * @param {Vector[]} cornerPointCoordinates
      */
-    this.init = function(scene, mass, position, cornerPointCoordinates) {
+    this.init = function(scene, mass, inertia, position, cornerPointCoordinates) {
         var i;
         this.scene = scene;
         this.mass = mass;
+
         this.position = position;
+        this.speed = new Vector(0, 0);
         this.cornerPoints = [];
         for (i = 0; i < cornerPointCoordinates.length; i++) {
             var point = new CornerPoint(i, cornerPointCoordinates[i]);
@@ -144,22 +168,45 @@ var SolidObject = function() {
 
         this.updateCornerPoints();
 
-        this.estimateInertia();
+        if (inertia) {
+            this.inertia = inertia;
+        } else {
+            this.estimateInertia();
+        }
     };
 
     /**
      * Initializes the object with the specified data.
      * @param {Scene} scene
      * @param {number} mass
+     * @param {number} inertia
+     * @param {SolidObject} parent
+     * @param {Vector} parentMountPoint
+     * @param {Vector} childMountPoint
      * @param {Vector[]} cornerPointCoordinates
+     * @param {Boolean} [fixed]
      */
-    this.initChild = function(scene, mass, parent, parentMountPoint, childMountPoint, cornerPointCoordinates) {
+    this.initChild = function(scene, mass, inertia, parent, parentMountPoint, childMountPoint, cornerPointCoordinates, fixed) {
         var i;
         this.scene = scene;
         this.mass = mass;
         this.parent = parent;
         this.parentMountPoint = parentMountPoint;
         this.childMountPoint = childMountPoint;
+        this.fixed = fixed ? true : false;
+
+        if (this.fixed) {
+            // Register fixed root.
+            this.fixedParentRoot = this.parent;
+            while(this.parent.parent && this.parent.fixed) {
+                this.fixedParentRoot = this.parent.parent;
+            }
+            this.fixedParentRoot.fixedDescendants.push(this);
+        }
+
+        if (!this.fixed) {
+            this.speed = new Vector(0, 0);
+        }
 
         this.cornerPoints = [];
         for (i = 0; i < cornerPointCoordinates.length; i++) {
@@ -179,11 +226,57 @@ var SolidObject = function() {
         }
         this.cornerPoints[0].setPrevious(this.cornerPoints[this.cornerPoints.length - 1]);
 
-        this.position = this.getChildPosition();
-
         this.updateCornerPoints();
 
-        this.estimateInertia();
+        if (inertia) {
+            this.inertia = inertia;
+        } else {
+            this.estimateInertia();
+        }
+    };
+
+    /**
+     * Returns the combined fixed mass.
+     * @return {Number}
+     */
+    this.getMass = function() {
+        if (this.fixedDescendants.length > 0) {
+            // Fixed parent root.
+            var total = this.mass;
+            for (var i = 0; i < this.fixedDescendants.length; i++) {
+                total += this.fixedDescendants[i].mass;
+            }
+            return total;
+        } else {
+            return this.mass;
+        }
+    };
+
+    /**
+     * Returns the combined fixed inertia.
+     * @return {Number}
+     */
+    this.getInertia = function() {
+        // @todo: provide algorithm to combine, or keep this manually?
+        return this.inertia;
+    };
+
+    /**
+     * Estimates the inertia for the object from the bounding box and the mass.
+     */
+    this.estimateInertia = function() {
+        var bbox = this.getBoundingBox();
+        var ul = bbox.min;
+        var ur = new Vector(bbox.max.x, bbox.min.y);
+        var ll = new Vector(bbox.min.x, bbox.max.y);
+        var lr = bbox.max;
+
+        var inertia = ul.d(ul) + ul.d(ur) + ur.d(ur);
+        inertia += ul.d(ul) + ul.d(ll) + ll.d(ll);
+        inertia += ll.d(ll) + ll.d(lr) + lr.d(lr);
+        inertia += ur.d(ur) + ur.d(lr) + lr.d(lr);
+
+        this.inertia = inertia * this.mass / 6;
     };
 
     /**
@@ -207,24 +300,13 @@ var SolidObject = function() {
                 this.position.x += this.speed.x * dt;
                 this.position.y += this.speed.y * dt;
             } else {
-                //this.position.x += this.speed.x * dt;
-                //this.position.y += this.speed.y * dt;
-                this.position = this.getChildPosition();
+                // Reset cached position.
+                this.position = null;
             }
 
             // Update all absolute positions of the corner points.
             this.updateCornerPoints();
         }
-    };
-
-    /**
-     * Returns the child position (absolute).
-     */
-    this.getChildPosition = function() {
-        var coords = this.parent.getAbsoluteCoordinates(this.parentMountPoint);
-        var mp = this.getInverseRotatedCoordinates(this.childMountPoint);
-        coords = coords.sub(mp);
-        return coords;
     };
 
     /**
@@ -235,6 +317,18 @@ var SolidObject = function() {
         var ft = t - this.confirmedT;
         this.confirmedT = t;
         this.scene.stepCallback(this, ft);
+    };
+
+    /**
+     * Returns the position of the center of this solid object (absolute).
+     */
+    this.getPosition = function() {
+        if (this.parent && !this.position) {
+            var coords = this.parent.getAbsoluteCoordinates(this.parentMountPoint);
+            var mp = this.getInverseAbsoluteRotatedCoordinates(this.childMountPoint);
+            this.position = coords.sub(mp);
+        }
+        return this.position;
     };
 
     /**
@@ -255,6 +349,125 @@ var SolidObject = function() {
     };
 
     /**
+     * Returns the bounding box of all polygonal points.
+     * @returns {{min: Vector, max: Vector}}
+     */
+    this.getBoundingBox = function() {
+        if (this.boundingBox == null) {
+            var min = new Vector(null,null);
+            var max = new Vector(null,null);
+
+            var x, y;
+            for (var i = 0; i < this.cornerPoints.length; i++) {
+                x = this.cornerPoints[i].getAbsoluteCoordinates().x;
+                y = this.cornerPoints[i].getAbsoluteCoordinates().y;
+                if (min.x === null) {
+                    min.x = x;
+                    max.x = x;
+                    min.y = y;
+                    max.y = y;
+                } else {
+                    if (x < min.x) min.x = x;
+                    if (x > max.x) max.x = x;
+                    if (y < min.y) min.y = y;
+                    if (y > max.y) max.y = y;
+                }
+            }
+
+            this.boundingBox = {min: min, max: max};
+        }
+        return this.boundingBox;
+    };
+
+    /**
+     * Returns the current rotation relative to the world.
+     */
+    this.getAbsoluteRotation = function() {
+        if (this.parent && this.fixed) {
+            return this.rotation + this.parent.getAbsoluteRotation();
+        } else {
+            return this.rotation;
+        }
+    };
+
+    /**
+     * Returns the cosinus and sinus of the current rotation.
+     * @returns {{cos: number, sin: number}|*}
+     */
+    this.getAbsoluteRotationCosSin = function() {
+        if (this.rotationCosSin == null) {
+            var rotation = this.getAbsoluteRotation();
+            this.rotationCosSin = {
+                cos: Math.cos(rotation),
+                sin: Math.sin(rotation)
+            }
+        }
+        return this.rotationCosSin;
+    };
+
+    /**
+     * Returns the speed of this solid object at the specified absolute coordinates.
+     * @param coordinates
+     */
+    this.getSpeedAt = function(coordinates) {
+        var relCoordinates = coordinates.sub(this.getPosition());
+        var localRotationSpeed = relCoordinates.getPerp().mul(this.rotationSpeed);
+
+        if (this.parent && this.fixed) {
+            var speed = this.parent.getSpeedAt(coordinates);
+
+            // Add local rotation to the speed.
+            return speed.add(localRotationSpeed);
+        } else {
+            return this.speed.add(localRotationSpeed);
+        }
+    };
+
+    /**
+     * Returns the absolute world coordinates for the relative object coordinates.
+     * @param {Vector} coordinates
+     * @return {Vector}
+     */
+    this.getAbsoluteCoordinates = function(coordinates) {
+        var pos = this.getPosition();
+        var v = this.getAbsoluteRotationCosSin();
+        return new Vector(coordinates.x * v.cos - coordinates.y * v.sin + pos.x, coordinates.x * v.sin + coordinates.y * v.cos + pos.y);
+    };
+
+    /**
+     * Returns the relative object coordinates for the absolute world coordinates.
+     * @param {Vector} coordinates
+     * @return {Vector}
+     */
+    this.getRelativeCoordinates = function(coordinates) {
+        var pos = this.getPosition();
+        var v = this.getAbsoluteRotationCosSin();
+        var dx = coordinates.x - pos.x;
+        var dy = coordinates.y - pos.y;
+        return new Vector(dx * v.cos + dy * v.sin, -dx * v.sin + dy * v.cos);
+    };
+
+    /**
+     * Returns the rotated object coordinates for the relative coordinates.
+     * @param {Vector} coordinates
+     * @return {Vector}
+     */
+    this.getAbsoluteRotatedCoordinates = function(coordinates) {
+        var v = this.getAbsoluteRotationCosSin();
+        return new Vector(coordinates.x * v.cos + coordinates.y * v.sin, coordinates.x * v.sin - coordinates.y * v.cos);
+    };
+
+    /**
+     * Returns the inversely rotated object coordinates for the relative coordinates.
+     * @param {Vector} coordinates
+     * @return {Vector}
+     */
+    this.getInverseAbsoluteRotatedCoordinates = function(coordinates) {
+        var v = this.getAbsoluteRotationCosSin();
+        return new Vector(coordinates.x * v.cos - coordinates.y * v.sin, coordinates.x * v.sin + coordinates.y * v.cos);
+    };
+
+    /**
      * Adds speed.
      * This method should be used instead of directly modifying this.speed and this.rotationSpeed so that the physics
      * keep working correctly.
@@ -268,14 +481,24 @@ var SolidObject = function() {
      *   If not direct, the speed addition will be postponed until the next call to applyAddedSpeed.
      */
     this.addSpeed = function(x, y, rot, direct) {
-        if (direct) {
-            this.speed.x += x;
-            this.speed.y += y;
-            this.rotationSpeed += rot;
+        if (this.fixedParentRoot) {
+            // Add vector speed to the fixed parent root.
+            this.fixedParentRoot.addSpeed(x, y, 0, direct);
+            if (direct) {
+                this.rotationSpeed += rot;
+            } else {
+                this.addedRotationSpeed += rot;
+            }
         } else {
-            this.addedSpeed.x += x;
-            this.addedSpeed.y += y;
-            this.addedRotationSpeed += rot;
+            if (direct) {
+                this.speed.x += x;
+                this.speed.y += y;
+                this.rotationSpeed += rot;
+            } else {
+                this.addedSpeed.x += x;
+                this.addedSpeed.y += y;
+                this.addedRotationSpeed += rot;
+            }
         }
     };
 
@@ -284,57 +507,11 @@ var SolidObject = function() {
      * This is only done just before an speed adjustment.
      */
     this.applyAddedSpeed = function() {
-        this.speed.x += this.addedSpeed.x;
-        this.speed.y += this.addedSpeed.y;
-        this.rotationSpeed += this.addedRotationSpeed;
+        this.addSpeed(this.addedSpeed.x, this.addedSpeed.y, this.addedRotationSpeed, true);
 
         this.addedSpeed.x = 0;
         this.addedSpeed.y = 0;
         this.addedRotationSpeed = 0;
-    };
-
-    /**
-     * Sets a restore point of current speed and added speed.
-     */
-    this.setSpeedReset = function() {
-        this.speedResetData = [this.speed.clone(), this.rotationSpeed];
-    };
-
-    /**
-     * Reset speeds as they were at the last speed reset.
-     * @see setSpeedReset.
-     */
-    this.resetSpeed = function() {
-        this.speed = this.speedResetData[0].clone();
-        this.rotationSpeed = this.speedResetData[1];
-    };
-
-    this.savedSituation = null;
-    this.saveSituation = function() {
-        this.savedSituation = [this.t, this.position.clone(), this.rotation, this.boundingBox, this.rotationCosSin];
-        var cps = [];
-        for (var i = 0; i < this.cornerPoints.length; i++) {
-            cps[i] = [this.cornerPoints[i].absoluteCoordinates.clone(), this.cornerPoints[i].collisionHelperVariables]
-        }
-        this.savedSituation.push(cps);
-        return this.savedSituation;
-    };
-
-    this.resetSituation = function(situation) {
-        if (!situation) {
-            situation = this.savedSituation;
-        }
-        this.t = situation[0];
-        this.position = situation[1];
-        this.rotation = situation[2];
-        this.boundingBox = situation[3];
-        this.rotationCosSin = situation[4];
-
-        var cps = situation[5];
-        for (var i = 0; i < cps.length; i++) {
-            this.cornerPoints[i].absoluteCoordinates = cps[i][0];
-            this.cornerPoints[i].collisionHelperVariables = cps[i][1];
-        }
     };
 
     /**
@@ -577,111 +754,6 @@ var SolidObject = function() {
         }
 
         return uniqueCollisionPoints;
-    };
-
-    /**
-     * Returns the bounding box of all polygonal points.
-     * @returns {{min: Vector, max: Vector}}
-     */
-    this.getBoundingBox = function() {
-        if (this.boundingBox == null) {
-            var min = new Vector(null,null);
-            var max = new Vector(null,null);
-
-            var x, y;
-            for (var i = 0; i < this.cornerPoints.length; i++) {
-                x = this.cornerPoints[i].getAbsoluteCoordinates().x;
-                y = this.cornerPoints[i].getAbsoluteCoordinates().y;
-                if (min.x === null) {
-                    min.x = x;
-                    max.x = x;
-                    min.y = y;
-                    max.y = y;
-                } else {
-                    if (x < min.x) min.x = x;
-                    if (x > max.x) max.x = x;
-                    if (y < min.y) min.y = y;
-                    if (y > max.y) max.y = y;
-                }
-            }
-
-            this.boundingBox = {min: min, max: max};
-        }
-        return this.boundingBox;
-    };
-
-    /**
-     * Returns the cosinus and sinus of the current rotation.
-     * @returns {{cos: number, sin: number}|*}
-     */
-    this.getRotationCosSin = function() {
-        if (this.rotationCosSin == null) {
-            this.rotationCosSin = {
-                cos: Math.cos(this.rotation),
-                sin: Math.sin(this.rotation)
-            }
-        }
-        return this.rotationCosSin;
-    };
-
-    /**
-     * Estimates the inertia for the object from the bounding box and the mass.
-     */
-    this.estimateInertia = function() {
-        var bbox = this.getBoundingBox();
-        var ul = bbox.min;
-        var ur = new Vector(bbox.max.x, bbox.min.y);
-        var ll = new Vector(bbox.min.x, bbox.max.y);
-        var lr = bbox.max;
-
-        var inertia = ul.d(ul) + ul.d(ur) + ur.d(ur);
-        inertia += ul.d(ul) + ul.d(ll) + ll.d(ll);
-        inertia += ll.d(ll) + ll.d(lr) + lr.d(lr);
-        inertia += ur.d(ur) + ur.d(lr) + lr.d(lr);
-
-        this.inertia = inertia * this.mass / 6;
-    };
-
-    /**
-     * Returns the absolute world coordinates for the relative object coordinates.
-     * @param {Vector} coordinates
-     * @return {Vector}
-     */
-    this.getAbsoluteCoordinates = function(coordinates) {
-        var v = this.getRotationCosSin();
-        return new Vector(coordinates.x * v.cos - coordinates.y * v.sin + this.position.x, coordinates.x * v.sin + coordinates.y * v.cos + this.position.y);
-    };
-
-    /**
-     * Returns the relative object coordinates for the absolute world coordinates.
-     * @param {Vector} coordinates
-     * @return {Vector}
-     */
-    this.getRelativeCoordinates = function(coordinates) {
-        var v = this.getRotationCosSin();
-        var dx = coordinates.x - this.position.x;
-        var dy = coordinates.y - this.position.y;
-        return new Vector(dx * v.cos + dy * v.sin, -dx * v.sin + dy * v.cos);
-    };
-
-    /**
-     * Returns the rotated object coordinates for the relative coordinates.
-     * @param {Vector} coordinates
-     * @return {Vector}
-     */
-    this.getRotatedCoordinates = function(coordinates) {
-        var v = this.getRotationCosSin();
-        return new Vector(coordinates.x * v.cos + coordinates.y * v.sin, coordinates.x * v.sin - coordinates.y * v.cos);
-    };
-
-    /**
-     * Returns the inversely rotated object coordinates for the relative coordinates.
-     * @param {Vector} coordinates
-     * @return {Vector}
-     */
-    this.getInverseRotatedCoordinates = function(coordinates) {
-        var v = this.getRotationCosSin();
-        return new Vector(coordinates.x * v.cos - coordinates.y * v.sin, coordinates.x * v.sin + coordinates.y * v.cos);
     };
 
     /**

@@ -237,7 +237,7 @@ var Scene = function() {
                 }
             }
 
-            if (maxDistDiff > -1 * Scene.COLLISION_PROXIMITY) {
+            if (maxDistDiff > -Scene.COLLISION_PROXIMITY) {
                 // Done!
                 break;
             } else {

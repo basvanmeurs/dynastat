@@ -57,7 +57,7 @@ var SpeedAdjuster = function(scene) {
 
         // Push virtual connection for child objects.
         for (i = 0; i < this.scene.objects.length; i++) {
-            if (this.scene.objects[i].parent) {
+            if (this.scene.objects[i].parent && !this.scene.objects[i].fixed) {
                 this.info.push(this.getConnectionPointInfo(this.scene.objects[i], new Vector(1, 0)));
                 this.info.push(this.getConnectionPointInfo(this.scene.objects[i], new Vector(0, 1)));
             }
@@ -128,11 +128,20 @@ var SpeedAdjuster = function(scene) {
         var n = new Vector(e.getAbsoluteCoordinates().y - e.next.getAbsoluteCoordinates().y, e.next.getAbsoluteCoordinates().x - e.getAbsoluteCoordinates().x);
         n = n.mul(1 / n.getLength());
 
+        // Determine the objects to apply the impulse to (normally this is the same as the collided objects).
+        if (o1.fixedParentRoot) {
+            //@todo: set appO1
+        }
+
+        if (o2.fixedParentRoot) {
+            //@todo: set appO2
+        }
+
         // Get dv1, dv2, dw1 and dw2 per 1 unit of moment.
-        var dv1 = n.mul(-1 / o1.mass);
-        var dv2 = n.mul(1 / o2.mass);
-        var dw1 = -r1.crossProduct(n) / o1.inertia;
-        var dw2 = r2.crossProduct(n) / o2.inertia;
+        var dv1 = n.mul(-1 / o1.getMass());
+        var dv2 = n.mul(1 / o2.getMass());
+        var dw1 = -r1.crossProduct(n) / o1.getInertia();
+        var dw2 = r2.crossProduct(n) / o2.getInertia();
 
         // Scale all speed components so that they total to 1 m/s of unit speed difference.
         var j = 1 / ((dv2.add(r2.getPerp().mul(dw2))).d(n) - (dv1.add(r1.getPerp().mul(dw1))).d(n));
@@ -147,7 +156,7 @@ var SpeedAdjuster = function(scene) {
         var key = "" + c.edgeSolidObject.index + "-" + c.edge.index + "_" + c.pointSolidObject.index + "-" + c.point.index;
 
         // Return physics info about the collision.
-        return {cp: c, abs: cp, key: key, o1: o1, o2: o2, dv1: dv1, dv2: dv2, dw1: dw1, dw2: dw2, r1: r1, r2: r2, n: n, dist: dist, impulsePerSpeedDiff: j};
+        return {cp: c, abs: cp, key: key, o1: o1, o2: o2, r1: r1, r2: r2, dv1: dv1, dv2: dv2, dw1: dw1, dw2: dw2, n: n, dist: dist, impulsePerSpeedDiff: j};
     };
 
     /**
@@ -157,7 +166,7 @@ var SpeedAdjuster = function(scene) {
      * @returns {{o1: SolidObject, o2: SolidObject, dv1: Vector, dv2: Vector, dw1: number, dw2: number, r1: Vector, r2: Vector, n: Vector}}
      */
     this.getConnectionPointInfo = function(c, n) {
-        n = c.parent.getRotatedCoordinates(n);
+        n = c.parent.getAbsoluteRotatedCoordinates(n);
 
         // Get collision info.
         var o1 = c.parent;
@@ -169,14 +178,16 @@ var SpeedAdjuster = function(scene) {
         var cp = c.parent.getAbsoluteCoordinates(c.parentMountPoint);
 
         // Vectors from center of mass for both solid objects.
-        var r1 = cp.sub(o1.position);
-        var r2 = cp.sub(o2.getChildPosition());
+        var r1 = cp.sub(o1.getPosition());
+        var r2 = cp.sub(o2.getPosition());
+
+        // @todo: check for o1 fixed parent root. o2 is already known to be a non-fixed child so it doesn't need to be checked.
 
         // Get dv1, dv2, dw1 and dw2 per 1 unit of moment.
-        var dv1 = n.mul(-1 / o1.mass);
-        var dv2 = n.mul(1 / o2.mass);
-        var dw1 = -r1.crossProduct(n) / o1.inertia;
-        var dw2 = r2.crossProduct(n) / o2.inertia;
+        var dv1 = n.mul(-1 / o1.getMass());
+        var dv2 = n.mul(1 / o2.getMass());
+        var dw1 = -r1.crossProduct(n) / o1.getInertia();
+        var dw2 = r2.crossProduct(n) / o2.getInertia();
 
         // Scale all speed components so that they total to 1 m/s of unit speed difference.
         var j = 1 / ((dv2.add(r2.getPerp().mul(dw2))).d(n) - (dv1.add(r1.getPerp().mul(dw1))).d(n));
@@ -188,7 +199,7 @@ var SpeedAdjuster = function(scene) {
         var key = "" + c.index + "-" + c.parent.index;
 
         // Return physics info about the collision.
-        return {cp: null, abs: cp, key: key, o1: o1, o2: o2, dv1: dv1, dv2: dv2, dw1: dw1, dw2: dw2, r1: r1, r2: r2, n: n, dist: 0, impulsePerSpeedDiff: j, connection: true};
+        return {cp: null, abs: cp, key: key, o1: o1, o2: o2, r1: r1, r2: r2, dv1: dv1, dv2: dv2, dw1: dw1, dw2: dw2, n: n, dist: 0, impulsePerSpeedDiff: j, connection: true};
     };
 
     /**
@@ -353,14 +364,9 @@ SpeedAdjusterGroup.prototype.getSolverItems = function() {
     // Use matrix solver to get result.
     for (var i = 0; i < this.info.length; i++) {
         // Get vd.
-        var vd = this.getNormalSpeedDiff(
-            this.info[i].o1.speed,
-            this.info[i].o1.rotationSpeed,
-            this.info[i].r1,
-            this.info[i].o2.speed,
-            this.info[i].o2.rotationSpeed,
-            this.info[i].r2,
-            this.info[i].n
+        var vd = this.getCollisionPointSpeedDiff(
+            this.info[i],
+            false
         );
 
         var key = this.info[i].key;
@@ -399,7 +405,7 @@ SpeedAdjusterGroup.prototype.getSolverItems = function() {
                     }
                 } else {
                     if (this.info[i].dist < 0) {
-                        if (this.info[i].dist < -Scene.COLLISION_PROXIMITY) {
+                        if (this.info[i].dist < -10 * Scene.COLLISION_PROXIMITY) {
                             console.log('large collision overlap: ' + this.info[i].dist);
                         }
                         // Correct by applying extra impulse.
@@ -442,7 +448,7 @@ SpeedAdjusterGroup.prototype.adjust = function() {
 
 //console.log(this.speedAdjuster.staticSolverEngine.toString());
     // Applies friction impulse.
-    this.applyFriction(result);
+    /*this.applyFriction(result);
 
     // Re-roll the static solver engine, using the new diffs for friction.
     var newSolverItems = this.getSolverItems();
@@ -453,6 +459,7 @@ SpeedAdjusterGroup.prototype.adjust = function() {
     // Apply solution's speeds to objects.
     result = this.speedAdjuster.staticSolverEngine.getSolution();
     this.applyCollisionPointSpeeds(result);
+    */
 
     // Remove collision points that are no longer valid from all groups.
     var newInfos = [];
@@ -564,14 +571,9 @@ SpeedAdjusterGroup.prototype.applyFriction = function(pushSpeeds) {
             var nPerp = this.info[i].n.getPerp();
 
             // Get perpendicular speed difference on the collision edge.
-            var vd = this.getNormalSpeedDiff(
-                this.info[i].o1.speed,
-                this.info[i].o1.rotationSpeed,
-                this.info[i].r1,
-                this.info[i].o2.speed,
-                this.info[i].o2.rotationSpeed,
-                this.info[i].r2,
-                nPerp
+            var vd = this.getCollisionPointSpeedDiff(
+                this.info[i],
+                true
             );
 
             if (vd > 0) {
@@ -626,37 +628,23 @@ SpeedAdjusterGroup.prototype.applyFriction = function(pushSpeeds) {
  * Returns the collision point speed diff.
  * @param {object} info
  *   Collision point info.
- * @returns {number}
- */
-SpeedAdjusterGroup.prototype.getCollisionPointSpeedDiff = function(info) {
-    return this.getNormalSpeedDiff(info.o1.speed, info.o1.rotationSpeed, info.r1, info.o2.speed, info.o2.rotationSpeed, info.r2, info.n);
-};
-
-/**
- * Returns the speed difference between both solid objects relative to the normal.
- * @param {Vector} v1
- *   Linear speed of solid object 1.
- * @param {Number} w1
- *   Rotation speed of so 1.
- * @param {Vector} r1
- *   Distance of CM of so 1 to collision point.
- * @param {Vector} v2
- *   Linear speed of solid object 2.
- * @param {Number} w2
- *   Rotation speed of so 2.
- * @param {Vector} r2
- *   Distance of CM of so 2 to collision point.
- * @param {Vector} n
- *   The speed diff normal.
+ * @param {Boolean} nPerp
+ *   If true, the speed diff perpendicular to the collision normal is returned.
  * @returns {number}
  *   The speed difference. Negative is 1 moving towards 2 (and vice versa), positive is 1 moving away from 2.
  */
-SpeedAdjusterGroup.prototype.getNormalSpeedDiff = function(v1, w1, r1, v2, w2, r2, n) {
-    // Calculate current speeds at collision point.
-    var v1AtCp = v1.add(r1.getPerp().mul(w1));
-    var v2AtCp = v2.add(r2.getPerp().mul(w2));
+SpeedAdjusterGroup.prototype.getCollisionPointSpeedDiff = function(info, nPerp) {
 
-    // Calculate speeds relative to normal.
+    // Calculate current speeds at collision point.
+    var v1AtCp = info.o1.getSpeedAt(info.abs);
+    var v2AtCp = info.o2.getSpeedAt(info.abs);
+
+    // Calculate speeds relative to collision normal.
+    var n = info.n;
+    if (nPerp) {
+        n = n.getPerp();
+    }
+
     var v1n = v1AtCp.d(n);
     var v2n = v2AtCp.d(n);
 

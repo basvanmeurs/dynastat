@@ -54,7 +54,7 @@ var View = function(scene) {
                 if (inCollision) {
                     this.context.strokeStyle = '#0000ff';
                 } else {
-                    this.context.strokeStyle = '#000000';
+                    this.context.strokeStyle = '#eeeeee';
                 }
                 this.context.beginPath();
                 this.context.moveTo(s.x, s.y);
@@ -72,7 +72,7 @@ var View = function(scene) {
         }
 
         // Show collision points.
-/*        for (i = 0; i < this.scene.collisionPoints.length; i++) {
+        for (i = 0; i < this.scene.collisionPoints.length; i++) {
             var cp = this.scene.collisionPoints[i];
             var c = cp.point.getAbsoluteCoordinates();
             c = this.translateCoords(c);
@@ -96,7 +96,7 @@ var View = function(scene) {
             this.context.lineWidth = 1;
 
             this.context.strokeText("" + i, c.x + d.x, c.y + d.y);
-        }*/
+        }
 
         this.context.strokeText("" + scene.frame, 20, 20);
     };
