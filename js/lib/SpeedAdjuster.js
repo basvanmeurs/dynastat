@@ -88,16 +88,16 @@ var SpeedAdjuster = function(scene) {
      */
     this.getCollisionPointEffect = function(c1, c2) {
         var effect = 0;
-        if (c1.o1 == c2.o1) {
-            effect -= (c2.r1.getPerp().mul(c1.dw1).add(c1.dv1)).d(c2.n);
-        } else if (c1.o1 == c2.o2) {
-            effect += (c2.r2.getPerp().mul(c1.dw1).add(c1.dv1)).d(c2.n);
+        if (c1.appO1 == c2.appO1) {
+            effect -= (c2.appR1.getPerp().mul(c1.dw1).add(c1.dv1)).d(c2.n);
+        } else if (c1.appO1 == c2.appO2) {
+            effect += (c2.appR2.getPerp().mul(c1.dw1).add(c1.dv1)).d(c2.n);
         }
 
-        if (c1.o2 == c2.o1) {
-            effect -= (c2.r1.getPerp().mul(c1.dw2).add(c1.dv2)).d(c2.n);
-        } else if (c1.o2 == c2.o2) {
-            effect += (c2.r2.getPerp().mul(c1.dw2).add(c1.dv2)).d(c2.n);
+        if (c1.appO2 == c2.appO1) {
+            effect -= (c2.appR1.getPerp().mul(c1.dw2).add(c1.dv2)).d(c2.n);
+        } else if (c1.appO2 == c2.appO2) {
+            effect += (c2.appR2.getPerp().mul(c1.dw2).add(c1.dv2)).d(c2.n);
         }
 
         return effect;
@@ -121,30 +121,33 @@ var SpeedAdjuster = function(scene) {
         var cp = p.getAbsoluteCoordinates();
 
         // Vectors from center of mass for both solid objects.
-        var r1 = cp.sub(o1.position);
-        var r2 = cp.sub(o2.position);
+        var r1 = cp.sub(o1.getPosition());
+        var r2 = cp.sub(o2.getPosition());
 
         // Collision edge normal.
         var n = new Vector(e.getAbsoluteCoordinates().y - e.next.getAbsoluteCoordinates().y, e.next.getAbsoluteCoordinates().x - e.getAbsoluteCoordinates().x);
         n = n.mul(1 / n.getLength());
 
         // Determine the objects to apply the impulse to (normally this is the same as the collided objects).
+        var appO1 = o1, appR1 = r1, appO2 = o2, appR2 = r2;
         if (o1.fixedParentRoot) {
-            //@todo: set appO1
+            appO1 = o1.fixedParentRoot;
+            appR1 = cp.sub(appO1.getPosition());
         }
 
         if (o2.fixedParentRoot) {
-            //@todo: set appO2
+            appO2 = o2.fixedParentRoot;
+            appR2 = cp.sub(appO2.getPosition());
         }
 
         // Get dv1, dv2, dw1 and dw2 per 1 unit of moment.
-        var dv1 = n.mul(-1 / o1.getMass());
-        var dv2 = n.mul(1 / o2.getMass());
-        var dw1 = -r1.crossProduct(n) / o1.getInertia();
-        var dw2 = r2.crossProduct(n) / o2.getInertia();
+        var dv1 = n.mul(-1 / appO1.getMass());
+        var dv2 = n.mul(1 / appO2.getMass());
+        var dw1 = -appR1.crossProduct(n) / appO1.getInertia();
+        var dw2 = appR2.crossProduct(n) / appO2.getInertia();
 
         // Scale all speed components so that they total to 1 m/s of unit speed difference.
-        var j = 1 / ((dv2.add(r2.getPerp().mul(dw2))).d(n) - (dv1.add(r1.getPerp().mul(dw1))).d(n));
+        var j = 1 / ((dv2.add(appR2.getPerp().mul(dw2))).d(n) - (dv1.add(appR1.getPerp().mul(dw1))).d(n));
         dv1 = dv1.mul(j);
         dv2 = dv2.mul(j);
         dw1 *= j;
@@ -156,7 +159,7 @@ var SpeedAdjuster = function(scene) {
         var key = "" + c.edgeSolidObject.index + "-" + c.edge.index + "_" + c.pointSolidObject.index + "-" + c.point.index;
 
         // Return physics info about the collision.
-        return {cp: c, abs: cp, key: key, o1: o1, o2: o2, r1: r1, r2: r2, dv1: dv1, dv2: dv2, dw1: dw1, dw2: dw2, n: n, dist: dist, impulsePerSpeedDiff: j};
+        return {cp: c, abs: cp, key: key, o1: o1, o2: o2, r1: r1, r2: r2, appO1: appO1, appR1: appR1, appO2: appO2, appR2: appR2, dv1: dv1, dv2: dv2, dw1: dw1, dw2: dw2, n: n, dist: dist, impulsePerSpeedDiff: j};
     };
 
     /**
@@ -181,16 +184,26 @@ var SpeedAdjuster = function(scene) {
         var r1 = cp.sub(o1.getPosition());
         var r2 = cp.sub(o2.getPosition());
 
-        // @todo: check for o1 fixed parent root. o2 is already known to be a non-fixed child so it doesn't need to be checked.
+        // Determine the objects to apply the impulse to (normally this is the same as the collided objects).
+        var appO1 = o1, appR1 = r1, appO2 = o2, appR2 = r2;
+        if (o1.fixedParentRoot) {
+            appO1 = o1.fixedParentRoot;
+            appR1 = cp.sub(appO1.getPosition());
+        }
+
+        if (o2.fixedParentRoot) {
+            appO2 = o2.fixedParentRoot;
+            appR2 = cp.sub(appO2.getPosition());
+        }
 
         // Get dv1, dv2, dw1 and dw2 per 1 unit of moment.
-        var dv1 = n.mul(-1 / o1.getMass());
-        var dv2 = n.mul(1 / o2.getMass());
-        var dw1 = -r1.crossProduct(n) / o1.getInertia();
-        var dw2 = r2.crossProduct(n) / o2.getInertia();
+        var dv1 = n.mul(-1 / appO1.getMass());
+        var dv2 = n.mul(1 / appO2.getMass());
+        var dw1 = -appR1.crossProduct(n) / appO1.getInertia();
+        var dw2 = appR2.crossProduct(n) / appO2.getInertia();
 
         // Scale all speed components so that they total to 1 m/s of unit speed difference.
-        var j = 1 / ((dv2.add(r2.getPerp().mul(dw2))).d(n) - (dv1.add(r1.getPerp().mul(dw1))).d(n));
+        var j = 1 / ((dv2.add(appR2.getPerp().mul(dw2))).d(n) - (dv1.add(appR1.getPerp().mul(dw1))).d(n));
         dv1 = dv1.mul(j);
         dv2 = dv2.mul(j);
         dw1 *= j;
@@ -199,7 +212,7 @@ var SpeedAdjuster = function(scene) {
         var key = "" + c.index + "-" + c.parent.index;
 
         // Return physics info about the collision.
-        return {cp: null, abs: cp, key: key, o1: o1, o2: o2, r1: r1, r2: r2, dv1: dv1, dv2: dv2, dw1: dw1, dw2: dw2, n: n, dist: 0, impulsePerSpeedDiff: j, connection: true};
+        return {cp: null, abs: cp, key: key, o1: o1, o2: o2, r1: r1, r2: r2, appO1: appO1, appR1: appR1, appO2: appO2, appR2: appR2, dv1: dv1, dv2: dv2, dw1: dw1, dw2: dw2, n: n, dist: 0, impulsePerSpeedDiff: j, connection: true};
     };
 
     /**
@@ -262,6 +275,8 @@ var SpeedAdjuster = function(scene) {
                         done[fxIndex] = true;
                     }
                 }
+
+                //@todo: if fixed root parent, add all collisions that belong to the same.
             }
 
             groups.push(group);
@@ -316,8 +331,7 @@ var SpeedAdjuster = function(scene) {
 
         for (var i = 0; i < groups.length; i++) {
             var group = new SpeedAdjusterGroup(this, groups[i]);
-            var obj = group.adjust();
-            var newInfoObjects = obj.info;
+            var newInfoObjects = group.adjust();
 
             // Combine point info for look-ahead correction.
             newInfo = newInfo.concat(newInfoObjects);
@@ -429,7 +443,7 @@ SpeedAdjusterGroup.prototype.getSolverItems = function() {
 
 /**
  * Checks the existing scene and adjust speeds. Deletes collision points that are no longer valid.
- * @return {{info: Array, dt: Number}}
+ * @return {Array}
  *   The collision points that remain and the max time step to be valid.
  */
 SpeedAdjusterGroup.prototype.adjust = function() {
@@ -447,8 +461,9 @@ SpeedAdjusterGroup.prototype.adjust = function() {
     this.applyCollisionPointSpeeds(result);
 
 //console.log(this.speedAdjuster.staticSolverEngine.toString());
+
     // Applies friction impulse.
-    /*this.applyFriction(result);
+    this.applyFriction(result);
 
     // Re-roll the static solver engine, using the new diffs for friction.
     var newSolverItems = this.getSolverItems();
@@ -459,7 +474,6 @@ SpeedAdjusterGroup.prototype.adjust = function() {
     // Apply solution's speeds to objects.
     result = this.speedAdjuster.staticSolverEngine.getSolution();
     this.applyCollisionPointSpeeds(result);
-    */
 
     // Remove collision points that are no longer valid from all groups.
     var newInfos = [];
@@ -471,7 +485,7 @@ SpeedAdjusterGroup.prototype.adjust = function() {
         }
     }
 
-    return {info: newInfos};
+    return newInfos;
 };
 
 
@@ -483,10 +497,10 @@ SpeedAdjusterGroup.prototype.applyCollisionPointSpeeds = function(result) {
     for (var i = 0; i < this.info.length; i++) {
         var r = result[i];
         if (r != 0) {
-            this.info[i].o1.speed = this.info[i].o1.speed.add(this.info[i].dv1.mul(r));
-            this.info[i].o2.speed = this.info[i].o2.speed.add(this.info[i].dv2.mul(r));
-            this.info[i].o1.rotationSpeed += this.info[i].dw1 * r;
-            this.info[i].o2.rotationSpeed += this.info[i].dw2 * r;
+            this.info[i].appO1.speed = this.info[i].appO1.speed.add(this.info[i].dv1.mul(r));
+            this.info[i].appO2.speed = this.info[i].appO2.speed.add(this.info[i].dv2.mul(r));
+            this.info[i].appO1.rotationSpeed += this.info[i].dw1 * r;
+            this.info[i].appO2.rotationSpeed += this.info[i].dw2 * r;
         }
     }
 };

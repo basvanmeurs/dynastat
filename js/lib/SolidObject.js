@@ -198,7 +198,7 @@ var SolidObject = function() {
         if (this.fixed) {
             // Register fixed root.
             this.fixedParentRoot = this.parent;
-            while(this.parent.parent && this.parent.fixed) {
+            while(this.fixedParentRoot.parent && this.fixedParentRoot.fixed) {
                 this.fixedParentRoot = this.parent.parent;
             }
             this.fixedParentRoot.fixedDescendants.push(this);
@@ -483,12 +483,7 @@ var SolidObject = function() {
     this.addSpeed = function(x, y, rot, direct) {
         if (this.fixedParentRoot) {
             // Add vector speed to the fixed parent root.
-            this.fixedParentRoot.addSpeed(x, y, 0, direct);
-            if (direct) {
-                this.rotationSpeed += rot;
-            } else {
-                this.addedRotationSpeed += rot;
-            }
+            this.fixedParentRoot.addSpeed(x, y, rot, direct);
         } else {
             if (direct) {
                 this.speed.x += x;
@@ -499,6 +494,19 @@ var SolidObject = function() {
                 this.addedSpeed.y += y;
                 this.addedRotationSpeed += rot;
             }
+        }
+    };
+
+    /**
+     * Adds rotational speed to the local child object.
+     * @param rot
+     * @param direct
+     */
+    this.addFixedChildRotationSpeed = function(rot, direct) {
+        if (direct) {
+            this.rotationSpeed += rot;
+        } else {
+            this.addedRotationSpeed += rot;
         }
     };
 
