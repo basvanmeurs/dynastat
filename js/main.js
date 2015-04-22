@@ -42,13 +42,13 @@ var initScene = function (scene) {
     obj = new SolidObject();
     obj.initChild(
         scene,
-        50,
+        5,
         parent,
         new Vector(0, -4),
         new Vector(0, 4),
         [new Vector(-3, -5), new Vector(-1, 5), new Vector(1, 5), new Vector(3, -5)]
     );
-    obj.inertia = 1000;
+    obj.inertia = 100;
     scene.addObject(obj);
 
     obj = new SolidObject();
@@ -225,7 +225,7 @@ var initScene = function (scene) {
     scene.stepCallback = function (object, dt) {
         if (object.index < scene.objects.length - 3) {
             //object.addSpeed(object.speed.x * -.01 * dt, object.speed.y * -.01 * dt, object.rotationSpeed * -.01);
-            object.addSpeed(0, -9 * dt, 0);
+            object.addSpeed(0, -39 * dt, 0);
         }
 
         if (object.index == scene.objects.length - 2) {

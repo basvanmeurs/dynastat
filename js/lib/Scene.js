@@ -270,7 +270,7 @@ Scene.COLLISION_PROXIMITY = .01;
  * The time step per iteration.
  * @type {number}
  */
-Scene.TIMESTEP = .01;
+Scene.TIMESTEP = .02;
 
 var output = document.getElementById('output');
 Scene.log = function(msg) {
