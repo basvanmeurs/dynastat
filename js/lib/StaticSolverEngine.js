@@ -131,12 +131,12 @@ var StaticSolverEngine = function(maxPoints) {
 
                 v = this.state.cells[index * this.state.w + i] * this.state.cells[i * this.state.w + index];
                 k -= v;
-                if (k < 1e-6 && k > -1e-6) {
-                    // Overshadowing situation! First remove point i from set, and then try again to add point.
+                if (k < 1e-4 && k > -1e-4) {
                     if (this.state.cells[index * this.state.w + i] < 0) {
                         // False overshadow. This is a nasty situation which can occur for perfectly legal situations and needs to be resolved by adding a slight noise or killing the point.
                         throw new FalseOverflowError(index, i);
                     } else {
+                        // Overshadowing situation! First remove point i from set, and then try again to add point.
                         this.removePoint(i);
                         return this.addPoint(index);
                     }

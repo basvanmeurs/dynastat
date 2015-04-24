@@ -17,23 +17,35 @@ var initScene = function (scene) {
     obj.initChild(
         scene,
         5,
-        100,
+        10000,
         parent,
-        new Vector(0, -5),
-        new Vector(0, 4),
-        [new Vector(-3, -5), new Vector(-1, 5), new Vector(1, 5), new Vector(3, -5)],
+        new Vector(-5, -5),
+        null,
+        [new Vector(-1, -2), new Vector(-1, 2), new Vector(1, 2), new Vector(1, -2)],
         true
     );
     scene.addObject(obj);
 
-    var parent = obj;
+    obj = new SolidObject();
+    obj.initChild(
+        scene,
+        5,
+        10000,
+        parent,
+        new Vector(5, -5),
+        new Vector(0, 0),
+        [new Vector(-1, -2), new Vector(-1, 2), new Vector(1, 2), new Vector(1, -2)],
+        true
+    );
+    scene.addObject(obj);
+/*
     obj = new SolidObject();
     obj.initChild(
         scene,
         5,
         100,
         parent,
-        new Vector(0, -4),
+        new Vector(0, -5),
         new Vector(0, 4),
         [new Vector(-3, -5), new Vector(-1, 5), new Vector(1, 5), new Vector(3, -5)],
         false
@@ -50,10 +62,26 @@ var initScene = function (scene) {
         new Vector(0, -4),
         new Vector(0, 4),
         [new Vector(-3, -5), new Vector(-1, 5), new Vector(1, 5), new Vector(3, -5)],
-        true
+        false
+    );
+    obj.rotationSpeed = .1;
+    scene.addObject(obj);
+*/
+/*
+    var parent = obj;
+    obj = new SolidObject();
+    obj.initChild(
+        scene,
+        5,
+        100,
+        parent,
+        new Vector(0, -4),
+        new Vector(0, 4),
+        [new Vector(-3, -5), new Vector(-1, 5), new Vector(1, 5), new Vector(3, -5)],
+        false
     );
     scene.addObject(obj);
-
+*/
     obj = new SolidObject();
     obj.init(
         scene,
@@ -64,7 +92,7 @@ var initScene = function (scene) {
     );
     obj.speed.x = 1;
     scene.addObject(obj);
-
+/*
     obj = new SolidObject();
     obj.init(
         scene,
@@ -76,6 +104,7 @@ var initScene = function (scene) {
     obj.rotationSpeed = 0;
     obj.speed.x = 0;
     scene.addObject(obj);
+*/
 /*
     for (var i = 0; i < 5; i++) {
         obj = new SolidObject();
@@ -140,106 +169,6 @@ var initScene = function (scene) {
     obj.speed.x = 0;
     obj.speed.y = 0;
     scene.addObject(obj);
-
-    // Start.
-    /*    var start = [{
-     "pos": {"x": 49.5651541243947, "y": 3.510703713450554},
-     "speed": {"x": 1.5627083845642753, "y": 1.6217348024723193},
-     "rotation": 1.1079099800861245,
-     "rotationSpeed": 0.038666341862783005
-     }, {
-     "pos": {"x": 63.662253373273266, "y": -4.999366241358262},
-     "speed": {"x": 0.5908439568075687, "y": -1.0707118985875397e-7},
-     "rotation": -0.00003651767847567749,
-     "rotationSpeed": -1.8301981371399156e-10
-     }, {
-     "pos": {"x": -53.12715529579904, "y": 69.490377486687265},
-     "speed": {"x": 7.080551125663003, "y": 7.991480143074257},
-     "rotation": -2.433275818224548,
-     "rotationSpeed": 0.49709853289430117
-     }, {
-     "pos": {"x": 78.89454098940449, "y": -7.999198836970292},
-     "speed": {"x": -0.0927996485444344, "y": -1.0900491134724355e-7},
-     "rotation": 14.137127391597751,
-     "rotationSpeed": -1.819267878705455e-10
-     }, {
-     "pos": {"x": 90.99971759305606, "y": -6.99900111533321},
-     "speed": {"x": -0.0007407753158916442, "y": -1.6512173621234985e-7},
-     "rotation": 28.2743839276328,
-     "rotationSpeed": 0.00014816702761260734
-     }, {
-     "pos": {"x": -45.000000097603966, "y": 13.00000004157928},
-     "speed": {"x": -5.689224816133642e-9, "y": 2.423595642911739e-9},
-     "rotation": 122.80413319878545,
-     "rotationSpeed": 6.281083483666611
-     }, {
-     "pos": {"x": 6.830846897513274e-8, "y": -20.000000989453493},
-     "speed": {"x": 1.4134033076366474e-8, "y": -9.467685941584561e-8},
-     "rotation": -1.2756149701366104e-9,
-     "rotationSpeed": -1.8301982829865708e-10
-     }];*/
-    /*var start = {
-     "objects": [{
-     "pos": {"x": -92.99328713792033, "y": -9.999000064118501},
-     "speed": {"x": -36.95615133607065, "y": -0.2816542877501632},
-     "rotation": -3.1415926543388997,
-     "rotationSpeed": -1.3352359495844013e-10
-     }, {
-     "pos": {"x": 7.48745262821115e-8, "y": -20.00000013225355},
-     "speed": {"x": 1.1157001723560722e-8, "y": -3.059268864540471e-8},
-     "rotation": -7.491059947601461e-10,
-     "rotationSpeed": -1.3352358538357677e-10
-     }],
-     "cps": [{"e": [1, 4], "p": [0, 1]}, {"e": [1, 4], "p": [0, 2]}, {"e": [1, 3], "p": [0, 2]}, {
-     "e": [1, 3],
-     "p": [0, 3]
-     }]
-     };*/
-
-
-    //var start = {"objects":[{"pos":{"x":44.85374757752617,"y":-2.0234338731756045},"speed":{"x":-2.0558814858107635,"y":-35.59344911062198},"rotation":-8.405652856925407,"rotationSpeed":1.5670926952160282},{"pos":{"x":60.21094173842708,"y":-2.5110403415080116},"speed":{"x":-0.8994663978912935,"y":-2.483142486320145},"rotation":-0.29311978283716184,"rotationSpeed":0.33287448434602596},{"pos":{"x":92.7943882429746,"y":5.972687956161973},"speed":{"x":-0.3538919143269428,"y":-0.4081325705471316},"rotation":-4.685186585176324,"rotationSpeed":0.060045859629349496},{"pos":{"x":76.95168327022668,"y":-9.943628529888061},"speed":{"x":-0.47849744720424237,"y":0.15316826618633061},"rotation":9.41684694840285,"rotationSpeed":-0.09422705716668306},{"pos":{"x":90.99084968809855,"y":-6.999004894917081},"speed":{"x":-0.024362541171445942,"y":-0.4989581757982498},"rotation":9.424236843555272,"rotationSpeed":0.0021831044808638582},{"pos":{"x":-71.328116217393,"y":28.72185532206116},"speed":{"x":-1.1250180403012386,"y":4.607258760518487},"rotation":117.382377168653,"rotationSpeed":3.7387635549581617},{"pos":{"x":5.5703601671429e-7,"y":-20.000003222771262},"speed":{"x":4.263046901240756e-8,"y":-2.761435187086772e-7},"rotation":-6.490356378026792e-9,"rotationSpeed":-4.3040652732307507e-10}],"cps":[{"e":[6,4],"p":[4,1]},{"e":[6,4],"p":[3,0]},{"e":[6,4],"p":[1,2]},{"e":[6,5],"p":[4,0]},{"e":[6,4],"p":[3,1]},{"e":[1,1],"p":[3,2]},{"e":[6,5],"p":[4,5]},{"e":[2,4],"p":[4,4]},{"e":[6,5],"p":[2,4]},{"e":[1,3],"p":[0,1]},{"e":[3,3],"p":[4,2]},{"e":[4,2],"p":[3,3]}]}
-
-    var start = {"objects":[{"pos":{"x":12.976650818980104,"y":-1.6186274877287732},"speed":{"x":10.994235260682355,"y":-15.47996769789834},"rotation":3.1041343547124294,"rotationSpeed":-1.5246591618331302},{"pos":{"x":-39.78829141086724,"y":-4.962439922468965},"speed":{"x":-0.16785468239485107,"y":-0.12656169679809362},"rotation":-0.0037463474782438613,"rotationSpeed":-0.013665117451664665},{"pos":{"x":-22.802418574127003,"y":-9.999069959895488},"speed":{"x":-0.009202735452588463,"y":-0.3486014162847799},"rotation":-6.283180744698451,"rotationSpeed":0.0023042228430198426},{"pos":{"x":-13.024348917123286,"y":-6.857255636969765},"speed":{"x":-2.455969342072375,"y":0.40077449231229534},"rotation":1.8623384213532876,"rotationSpeed":0.277384866213333},{"pos":{"x":24.187216103662724,"y":-7.996988352878163},"speed":{"x":17.67715233378342,"y":-0.13549608178770473},"rotation":4.712725892795033,"rotationSpeed":0.0778808807558583},{"pos":{"x":24.936560137991762,"y":-7.999070491809371},"speed":{"x":17.106409128076976,"y":-0.4125032578463499},"rotation":4.712382427644317,"rotationSpeed":-0.005774999025104404},{"pos":{"x":24.101436196258916,"y":-7.999070498690058},"speed":{"x":16.58586557490805,"y":-0.6376803171073485},"rotation":4.712382427644598,"rotationSpeed":0.005485756324331757},{"pos":{"x":24.163354692364912,"y":-7.811388171840408},"speed":{"x":18.46219491272092,"y":0.5426266966848048},"rotation":4.679425841098807,"rotationSpeed":-0.6031767376655148},{"pos":{"x":1.355432001522966,"y":-7.572190400714056},"speed":{"x":-0.6944760430234936,"y":-0.02892717593782257},"rotation":2.7198151626157094,"rotationSpeed":-0.24660946927003055},{"pos":{"x":-66.81247902620814,"y":-12.019587228132119},"speed":{"x":-0.10980056761658447,"y":-0.38498427578404365},"rotation":12.683481073905687,"rotationSpeed":0.026644605233299392},{"pos":{"x":-0.0000010456754155795684,"y":-20.000037892249733},"speed":{"x":-9.645276167842677e-8,"y":-0.000003422645284896908},"rotation":8.240889319563341e-9,"rotationSpeed":9.623437853070627e-10}],"cps":[{"e":[10,4],"p":[9,5]},{"e":[10,4],"p":[9,4]},{"e":[10,4],"p":[2,3]},{"e":[10,4],"p":[2,4]},{"e":[10,4],"p":[6,3]},{"e":[10,4],"p":[5,3]},{"e":[10,4],"p":[1,3]},{"e":[10,4],"p":[4,2]},{"e":[10,4],"p":[1,2]},{"e":[10,4],"p":[6,2]},{"e":[10,4],"p":[7,2]},{"e":[10,4],"p":[5,2]},{"e":[10,4],"p":[8,1]},{"e":[10,4],"p":[4,3]},{"e":[10,4],"p":[3,0]},{"e":[10,4],"p":[8,0]},{"e":[1,3],"p":[9,3]},{"e":[2,4],"p":[1,2]},{"e":[3,0],"p":[2,3]},{"e":[2,2],"p":[3,0]},{"e":[6,4],"p":[0,1]},{"e":[4,4],"p":[0,1]},{"e":[7,4],"p":[0,1]},{"e":[3,2],"p":[8,2]},{"e":[0,2],"p":[8,5]},{"e":[3,0],"p":[2,2]}]};
-
-/*
-     for (var i = 0; i < start.objects.length; i++) {
-     var k = start.objects[i];
-     scene.objects[i].step(0, true);
-     scene.objects[i].position.x = k.pos.x;
-     scene.objects[i].position.y = k.pos.y;
-     scene.objects[i].speed.x = k.speed.x;
-     scene.objects[i].speed.y = k.speed.y;
-     scene.objects[i].rotationSpeed = k.rotationSpeed;
-     scene.objects[i].rotation = k.rotation;
-     scene.objects[i].updateCornerPoints();
-     }
-     for (var i = 0; i < start.cps.length; i++) {
-     var k = start.cps[i];
-     var cp = new CollisionPoint(
-     scene.objects[k.p[0]],
-     scene.objects[k.p[0]].cornerPoints[k.p[1]],
-     scene.objects[k.e[0]],
-     scene.objects[k.e[0]].cornerPoints[k.e[1]]
-     );
-     scene.collisionPoints.push(cp);
-     }
-*/
-    scene.view.update();
-
-    scene.stepCallback = function (object, dt) {
-        if (object.index < scene.objects.length - 3) {
-            //object.addSpeed(object.speed.x * -.01 * dt, object.speed.y * -.01 * dt, object.rotationSpeed * -.01);
-            //object.addSpeed(0, -39 * dt, 0);
-        }
-/*
-        if (object.index == scene.objects.length - 2) {
-            if (scene.objects[scene.objects.length - 2].rotationSpeed < 10) {
-                object.addSpeed(0, 0, .1, false);
-            }
-        }*/
-
-    };
-    scene.getIntersectionCounter = 0;
 };
 
 var keys = {};
@@ -259,30 +188,32 @@ var keyTimeout = function () {
         scene.objects[0].applyImpulse(new Vector(0, -5), new Vector(0, 1), -400);
     }
     if (keys['90']) {
-        scene.objects[0].applyImpulse(new Vector(0, 0), new Vector(1, 0), -300);
+//        scene.objects[0].applyImpulse(new Vector(0, 0), new Vector(1, 0), -300);
+        scene.objects[1].addFixedChildRotationSpeed(.1, false);
+        scene.objects[2].addFixedChildRotationSpeed(.1, false);
     }
     if (keys['88']) {
-        scene.objects[0].applyImpulse(new Vector(0, 0), new Vector(1, 0), 300);
+//        scene.objects[0].applyImpulse(new Vector(0, 0), new Vector(1, 0), 300);
+        scene.objects[1].addFixedChildRotationSpeed(-.1, false);
+        scene.objects[2].addFixedChildRotationSpeed(-.1, false);
     }
+    if (keys['32']) {
+        logSituation();
+    }
+
+/*    var brake = -0.05 * scene.objects[1].rotationSpeed;
+    scene.objects[1].addFixedChildRotationSpeed(brake, false);
+
+    brake = -0.05 * scene.objects[2].rotationSpeed;
+    scene.objects[2].addFixedChildRotationSpeed(brake, false);
+*/
+
     setTimeout(keyTimeout, 20);
 };
-keyTimeout();
 
 var logSituation = function () {
-    var obj = {objects: [], cps: []};
-    for (var i = 0; i < scene.collisionPoints.length; i++) {
-        var cp = scene.collisionPoints[i];
-        obj.cps.push({e: [cp.edgeSolidObject.index, cp.edge.index], p: [cp.pointSolidObject.index, cp.point.index]});
-    }
-    for (var i = 0; i < scene.objects.length; i++) {
-        obj.objects.push({
-            pos: scene.objects[i].position,
-            speed: scene.objects[i].speed,
-            rotation: scene.objects[i].rotation,
-            rotationSpeed: scene.objects[i].rotationSpeed
-        });
-    }
-    console.log(JSON.stringify(obj));
+    console.log('frame: ' + scene.frame);
+    console.log(JSON.stringify(scene.export()));
 };
 window.logSituation = logSituation;
 
@@ -300,6 +231,35 @@ $(document).keyup(function (e) {
 $(document).ready(function () {
     var scene = new Scene();
     window.scene = scene;
+
+    /*
+     frame: 1231
+     {"objects":[{"mass":200,"inertia":5000,"position":{"x":-50.640910942486755,"y":-11.71265433166115},"speed":{"x":-8.681294531270446,"y":-3.5209831036976693},"rotation":0.004895343056127464,"rotationSpeed":-0.005178446564611304,"cornerPointCoordinates":[{"x":-5,"y":-6},{"x":-5,"y":8},{"x":5,"y":8},{"x":5,"y":-6}],"parent":null,"fixed":false,"parentMountPoint":null,"childMountPoint":null,"addedSpeed":{"x":0,"y":-1.1799999999999748},"addedRotationSpeed":0},{"mass":5,"inertia":10000,"position":{"x":-55.61637441412812,"y":-16.73707103834089},"speed":null,"rotation":34.40799999999875,"rotationSpeed":6.299999999999994,"cornerPointCoordinates":[{"x":-1,"y":-2},{"x":-1,"y":2},{"x":1,"y":2},{"x":1,"y":-2}],"parent":0,"fixed":true,"parentMountPoint":{"x":-5,"y":-5},"childMountPoint":{"x":0,"y":0},"addedSpeed":{"x":0,"y":0},"addedRotationSpeed":0},{"mass":5,"inertia":10000,"position":{"x":-45.61649423580702,"y":-16.688117803302514},"speed":null,"rotation":34.40799999999876,"rotationSpeed":6.299999999999994,"cornerPointCoordinates":[{"x":-1,"y":-2},{"x":-1,"y":2},{"x":1,"y":2},{"x":1,"y":-2}],"parent":0,"fixed":true,"parentMountPoint":{"x":5,"y":-5},"childMountPoint":{"x":0,"y":0},"addedSpeed":{"x":0,"y":0},"addedRotationSpeed":0},{"mass":100,"inertia":46666.666666666664,"position":{"x":-126.11053084650626,"y":0.25402250771336654},"speed":{"x":7.021009809193126,"y":-8.968630612226862},"rotation":10.008946373922827,"rotationSpeed":0.30151960635689984,"cornerPointCoordinates":[{"x":-10,"y":10},{"x":10,"y":10},{"x":10,"y":-10},{"x":-10,"y":-10}],"parent":null,"fixed":false,"parentMountPoint":null,"childMountPoint":null,"addedSpeed":{"x":0,"y":0},"addedRotationSpeed":0},{"mass":100000000000000000000,"inertia":3.5187500000000005e+24,"position":{"x":9.959221839885716e-17,"y":-20},"speed":{"x":-2.9596705230403347e-18,"y":-2.884669912165557e-15},"rotation":-2.0853275568073433e-18,"rotationSpeed":6.005851458143706e-19,"cornerPointCoordinates":[{"x":-150,"y":100},{"x":-1,"y":100},{"x":-1,"y":96},{"x":-148,"y":96},{"x":-148,"y":1},{"x":148,"y":1},{"x":148,"y":96},{"x":1,"y":96},{"x":1,"y":100},{"x":150,"y":100},{"x":150,"y":-5},{"x":-150,"y":-5}],"parent":null,"fixed":false,"parentMountPoint":null,"childMountPoint":null,"addedSpeed":{"x":0,"y":0},"addedRotationSpeed":0}],"cps":[{"e":[4,4],"p":[1,1]},{"e":[4,4],"p":[2,1]}],"speedAdjuster":{"lastCollisionsTimes":{"3-0_0-1":0.6600000000000004,"0-0_3-1":0.7700000000000005,"3-1_1-1":0.8800000000000006,"4-4_3-2":0.9800000000000006,"4-4_3-3":1.0700000000000007,"4-4_2-3":11.259999999999804,"4-4_0-2":1.184531250000001,"4-4_2-2":10.99999999999981,"4-4_1-0":11.4999999999998,"4-4_2-0":11.4999999999998,"4-4_2-1":11.699999999999795,"4-4_1-1":11.699999999999795,"4-4_1-2":10.99999999999981,"4-4_1-3":11.259999999999804,"4-2_3-1":5.989999999999917,"4-3_3-2":10.229999999999826,"4-4_0-0":11.4999999999998},"lastLookAheadCps":{}}}
+     frame: 1232
+     {"objects":[{"mass":200,"inertia":5000,"position":{"x":-50.728317491884894,"y":-11.756348471472945},"speed":{"x":-8.740654939814284,"y":-4.369413981179537},"rotation":0.004843771829807184,"rotationSpeed":-0.005157122632028041,"cornerPointCoordinates":[{"x":-5,"y":-6},{"x":-5,"y":8},{"x":5,"y":8},{"x":5,"y":-6}],"parent":null,"fixed":false,"parentMountPoint":null,"childMountPoint":null,"addedSpeed":{"x":0,"y":-1.1799999999999748},"addedRotationSpeed":0},{"mass":5,"inertia":10000,"position":{"x":-55.7040400722409,"y":-16.780508580718607},"speed":null,"rotation":34.470999999998746,"rotationSpeed":6.299999999999994,"cornerPointCoordinates":[{"x":-1,"y":-2},{"x":-1,"y":2},{"x":1,"y":2},{"x":1,"y":-2}],"parent":0,"fixed":true,"parentMountPoint":{"x":-5,"y":-5},"childMountPoint":{"x":0,"y":0},"addedSpeed":{"x":0,"y":0},"addedRotationSpeed":0},{"mass":5,"inertia":10000,"position":{"x":-45.70415738263923,"y":-16.73207105182895},"speed":null,"rotation":34.47099999999875,"rotationSpeed":6.299999999999994,"cornerPointCoordinates":[{"x":-1,"y":-2},{"x":-1,"y":2},{"x":1,"y":2},{"x":1,"y":-2}],"parent":0,"fixed":true,"parentMountPoint":{"x":5,"y":-5},"childMountPoint":{"x":0,"y":0},"addedSpeed":{"x":0,"y":0},"addedRotationSpeed":0},{"mass":100,"inertia":46666.666666666664,"position":{"x":-126.04032074841433,"y":0.16433620159109985},"speed":{"x":7.021009809193126,"y":-8.968630612226862},"rotation":10.011961569986395,"rotationSpeed":0.30151960635689984,"cornerPointCoordinates":[{"x":-10,"y":10},{"x":10,"y":10},{"x":10,"y":-10},{"x":-10,"y":-10}],"parent":null,"fixed":false,"parentMountPoint":null,"childMountPoint":null,"addedSpeed":{"x":0,"y":0},"addedRotationSpeed":0},{"mass":100000000000000000000,"inertia":3.5187500000000005e+24,"position":{"x":9.956380890179763e-17,"y":-20},"speed":{"x":-2.840949705952657e-18,"y":-2.8853662073228448e-15},"rotation":-2.079311964368907e-18,"rotationSpeed":6.015592438436153e-19,"cornerPointCoordinates":[{"x":-150,"y":100},{"x":-1,"y":100},{"x":-1,"y":96},{"x":-148,"y":96},{"x":-148,"y":1},{"x":148,"y":1},{"x":148,"y":96},{"x":1,"y":96},{"x":1,"y":100},{"x":150,"y":100},{"x":150,"y":-5},{"x":-150,"y":-5}],"parent":null,"fixed":false,"parentMountPoint":null,"childMountPoint":null,"addedSpeed":{"x":0,"y":0},"addedRotationSpeed":0}],"cps":[{"e":[4,4],"p":[1,1]},{"e":[4,4],"p":[2,1]}],"speedAdjuster":{"lastCollisionsTimes":{"3-0_0-1":0.6600000000000004,"0-0_3-1":0.7700000000000005,"3-1_1-1":0.8800000000000006,"4-4_3-2":0.9800000000000006,"4-4_3-3":1.0700000000000007,"4-4_2-3":11.259999999999804,"4-4_0-2":1.184531250000001,"4-4_2-2":10.99999999999981,"4-4_1-0":11.4999999999998,"4-4_2-0":11.4999999999998,"4-4_2-1":11.709999999999795,"4-4_1-1":11.709999999999795,"4-4_1-2":10.99999999999981,"4-4_1-3":11.259999999999804,"4-2_3-1":5.989999999999917,"4-3_3-2":10.229999999999826,"4-4_0-0":11.4999999999998},"lastLookAheadCps":{}}}
+     frame: 1233
+     {"objects":[{"mass":200,"inertia":5000,"position":{"x":-50.81635064352846,"y":-11.808348027185659},"speed":{"x":-8.803315164356336,"y":-5.199955571271385},"rotation":0.004792051711464045,"rotationSpeed":-0.005172011834314051,"cornerPointCoordinates":[{"x":-5,"y":-6},{"x":-5,"y":8},{"x":5,"y":8},{"x":5,"y":-6}],"parent":null,"fixed":false,"parentMountPoint":null,"childMountPoint":null,"addedSpeed":{"x":0,"y":-1.1799999999999748},"addedRotationSpeed":0},{"mass":5,"inertia":10000,"position":{"x":-55.79233306738482,"y":-16.832250784750997},"speed":null,"rotation":34.53399999999874,"rotationSpeed":6.299999999999994,"cornerPointCoordinates":[{"x":-1,"y":-2},{"x":-1,"y":2},{"x":1,"y":2},{"x":1,"y":-2}],"parent":0,"fixed":true,"parentMountPoint":{"x":-5,"y":-5},"childMountPoint":{"x":0,"y":0},"addedSpeed":{"x":0,"y":0},"addedRotationSpeed":0},{"mass":5,"inertia":10000,"position":{"x":-45.79244788596312,"y":-16.784330451042017},"speed":null,"rotation":34.53399999999875,"rotationSpeed":6.299999999999994,"cornerPointCoordinates":[{"x":-1,"y":-2},{"x":-1,"y":2},{"x":1,"y":2},{"x":1,"y":-2}],"parent":0,"fixed":true,"parentMountPoint":{"x":5,"y":-5},"childMountPoint":{"x":0,"y":0},"addedSpeed":{"x":0,"y":0},"addedRotationSpeed":0},{"mass":100,"inertia":46666.666666666664,"position":{"x":-125.9701106503224,"y":0.07464989546883315},"speed":{"x":7.021009809193126,"y":-8.968630612226862},"rotation":10.014976766049964,"rotationSpeed":0.30151960635689984,"cornerPointCoordinates":[{"x":-10,"y":10},{"x":10,"y":10},{"x":10,"y":-10},{"x":-10,"y":-10}],"parent":null,"fixed":false,"parentMountPoint":null,"childMountPoint":null,"addedSpeed":{"x":0,"y":0},"addedRotationSpeed":0},{"mass":100000000000000000000,"inertia":3.5187500000000005e+24,"position":{"x":9.953665260922894e-17,"y":-20},"speed":{"x":-2.7156292568685533e-18,"y":-2.8861000699836517e-15},"rotation":-2.073286085532062e-18,"rotationSpeed":6.025878836845055e-19,"cornerPointCoordinates":[{"x":-150,"y":100},{"x":-1,"y":100},{"x":-1,"y":96},{"x":-148,"y":96},{"x":-148,"y":1},{"x":148,"y":1},{"x":148,"y":96},{"x":1,"y":96},{"x":1,"y":100},{"x":150,"y":100},{"x":150,"y":-5},{"x":-150,"y":-5}],"parent":null,"fixed":false,"parentMountPoint":null,"childMountPoint":null,"addedSpeed":{"x":0,"y":0},"addedRotationSpeed":0}],"cps":[{"e":[4,4],"p":[1,1]},{"e":[4,4],"p":[2,1]}],"speedAdjuster":{"lastCollisionsTimes":{"3-0_0-1":0.6600000000000004,"0-0_3-1":0.7700000000000005,"3-1_1-1":0.8800000000000006,"4-4_3-2":0.9800000000000006,"4-4_3-3":1.0700000000000007,"4-4_2-3":11.259999999999804,"4-4_0-2":1.184531250000001,"4-4_2-2":10.99999999999981,"4-4_1-0":11.4999999999998,"4-4_2-0":11.4999999999998,"4-4_2-1":11.719999999999795,"4-4_1-1":11.719999999999795,"4-4_1-2":10.99999999999981,"4-4_1-3":11.259999999999804,"4-2_3-1":5.989999999999917,"4-3_3-2":10.229999999999826,"4-4_0-0":11.4999999999998},"lastLookAheadCps":{}}}
+     frame: 1234
+     {"objects":[{"mass":200,"inertia":5000,"position":{"x":-50.90504951282451,"y":-11.868441362997066},"speed":{"x":-8.869886929605164,"y":-6.009333581140841},"rotation":0.004739883876091945,"rotationSpeed":-0.005216783537210114,"cornerPointCoordinates":[{"x":-5,"y":-6},{"x":-5,"y":8},{"x":5,"y":8},{"x":5,"y":-6}],"parent":null,"fixed":false,"parentMountPoint":null,"childMountPoint":null,"addedSpeed":{"x":0,"y":-1.1799999999999748},"addedRotationSpeed":0},{"mass":5,"inertia":10000,"position":{"x":-55.88129401604171,"y":-16.892084527494386},"speed":null,"rotation":34.59699999999874,"rotationSpeed":6.299999999999994,"cornerPointCoordinates":[{"x":-1,"y":-2},{"x":-1,"y":2},{"x":1,"y":2},{"x":1,"y":-2}],"parent":0,"fixed":true,"parentMountPoint":{"x":-5,"y":-5},"childMountPoint":{"x":0,"y":0},"addedSpeed":{"x":0,"y":0},"addedRotationSpeed":0},{"mass":5,"inertia":10000,"position":{"x":-45.88140634832719,"y":-16.844685866214263},"speed":null,"rotation":34.596999999998744,"rotationSpeed":6.299999999999994,"cornerPointCoordinates":[{"x":-1,"y":-2},{"x":-1,"y":2},{"x":1,"y":2},{"x":1,"y":-2}],"parent":0,"fixed":true,"parentMountPoint":{"x":5,"y":-5},"childMountPoint":{"x":0,"y":0},"addedSpeed":{"x":0,"y":0},"addedRotationSpeed":0},{"mass":100,"inertia":46666.666666666664,"position":{"x":-125.89990055223046,"y":-0.015036410653433557},"speed":{"x":7.021009809193126,"y":-8.968630612226862},"rotation":10.017991962113532,"rotationSpeed":0.30151960635689984,"cornerPointCoordinates":[{"x":-10,"y":10},{"x":10,"y":10},{"x":10,"y":-10},{"x":-10,"y":-10}],"parent":null,"fixed":false,"parentMountPoint":null,"childMountPoint":null,"addedSpeed":{"x":0,"y":0},"addedRotationSpeed":0},{"mass":100000000000000000000,"inertia":3.5187500000000005e+24,"position":{"x":9.951082775196524e-17,"y":-20},"speed":{"x":-2.5824857263708972e-18,"y":-2.886878376162926e-15},"rotation":-2.067249276037218e-18,"rotationSpeed":6.036809494844314e-19,"cornerPointCoordinates":[{"x":-150,"y":100},{"x":-1,"y":100},{"x":-1,"y":96},{"x":-148,"y":96},{"x":-148,"y":1},{"x":148,"y":1},{"x":148,"y":96},{"x":1,"y":96},{"x":1,"y":100},{"x":150,"y":100},{"x":150,"y":-5},{"x":-150,"y":-5}],"parent":null,"fixed":false,"parentMountPoint":null,"childMountPoint":null,"addedSpeed":{"x":0,"y":0},"addedRotationSpeed":0}],"cps":[{"e":[4,4],"p":[1,1]},{"e":[4,4],"p":[2,1]}],"speedAdjuster":{"lastCollisionsTimes":{"3-0_0-1":0.6600000000000004,"0-0_3-1":0.7700000000000005,"3-1_1-1":0.8800000000000006,"4-4_3-2":0.9800000000000006,"4-4_3-3":1.0700000000000007,"4-4_2-3":11.259999999999804,"4-4_0-2":1.184531250000001,"4-4_2-2":10.99999999999981,"4-4_1-0":11.4999999999998,"4-4_2-0":11.4999999999998,"4-4_2-1":11.729999999999794,"4-4_1-1":11.729999999999794,"4-4_1-2":10.99999999999981,"4-4_1-3":11.259999999999804,"4-2_3-1":5.989999999999917,"4-3_3-2":10.229999999999826,"4-4_0-0":11.4999999999998},"lastLookAheadCps":{}}}
+     frame: 1235
+     {"objects":[{"mass":200,"inertia":5000,"position":{"x":-50.952548418538434,"y":-11.904536406307113},"speed":{"x":-8.940970487326862,"y":-6.794361093654938},"rotation":0.004711803469806664,"rotationSpeed":-0.00528572353605225,"cornerPointCoordinates":[{"x":-5,"y":-6},{"x":-5,"y":8},{"x":5,"y":8},{"x":5,"y":-6}],"parent":null,"fixed":false,"parentMountPoint":null,"childMountPoint":null,"addedSpeed":{"x":0,"y":-0.6268750000000587},"addedRotationSpeed":0},{"mass":5,"inertia":10000,"position":{"x":-55.928933985734794,"y":-16.92803983385643},"speed":null,"rotation":34.63046874999874,"rotationSpeed":6.299999999999994,"cornerPointCoordinates":[{"x":-1,"y":-2},{"x":-1,"y":2},{"x":1,"y":2},{"x":1,"y":-2}],"parent":0,"fixed":true,"parentMountPoint":{"x":-5,"y":-5},"childMountPoint":{"x":0,"y":0},"addedSpeed":{"x":0,"y":0},"addedRotationSpeed":0},{"mass":5,"inertia":10000,"position":{"x":-45.92904499098911,"y":-16.880921973503476},"speed":null,"rotation":34.630468749998755,"rotationSpeed":6.299999999999994,"cornerPointCoordinates":[{"x":-1,"y":-2},{"x":-1,"y":2},{"x":1,"y":2},{"x":1,"y":-2}],"parent":0,"fixed":true,"parentMountPoint":{"x":5,"y":-5},"childMountPoint":{"x":0,"y":0},"addedSpeed":{"x":0,"y":0},"addedRotationSpeed":0},{"mass":100,"inertia":46666.666666666664,"position":{"x":-125.86260143761912,"y":-0.06268226078089321},"speed":{"x":7.021009809193126,"y":-8.968630612226862},"rotation":10.019593785022304,"rotationSpeed":0.30151960635689984,"cornerPointCoordinates":[{"x":-10,"y":10},{"x":10,"y":10},{"x":10,"y":-10},{"x":-10,"y":-10}],"parent":null,"fixed":false,"parentMountPoint":null,"childMountPoint":null,"addedSpeed":{"x":0,"y":0},"addedRotationSpeed":0},{"mass":100000000000000000000,"inertia":3.5187500000000005e+24,"position":{"x":9.949786355934471e-17,"y":-20},"speed":{"x":-2.4403186109275007e-18,"y":-2.8877078183866467e-15},"rotation":-2.0640360203405782e-18,"rotationSpeed":6.048481311322032e-19,"cornerPointCoordinates":[{"x":-150,"y":100},{"x":-1,"y":100},{"x":-1,"y":96},{"x":-148,"y":96},{"x":-148,"y":1},{"x":148,"y":1},{"x":148,"y":96},{"x":1,"y":96},{"x":1,"y":100},{"x":150,"y":100},{"x":150,"y":-5},{"x":-150,"y":-5}],"parent":null,"fixed":false,"parentMountPoint":null,"childMountPoint":null,"addedSpeed":{"x":0,"y":0},"addedRotationSpeed":0}],"cps":[{"e":[4,4],"p":[1,1]},{"e":[4,4],"p":[2,1]},{"e":[4,4],"p":[1,2]}],"speedAdjuster":{"lastCollisionsTimes":{"3-0_0-1":0.6600000000000004,"0-0_3-1":0.7700000000000005,"3-1_1-1":0.8800000000000006,"4-4_3-2":0.9800000000000006,"4-4_3-3":1.0700000000000007,"4-4_2-3":11.259999999999804,"4-4_0-2":1.184531250000001,"4-4_2-2":10.99999999999981,"4-4_1-0":11.4999999999998,"4-4_2-0":11.4999999999998,"4-4_2-1":11.739999999999794,"4-4_1-1":11.739999999999794,"4-4_1-2":10.99999999999981,"4-4_1-3":11.259999999999804,"4-2_3-1":5.989999999999917,"4-3_3-2":10.229999999999826,"4-4_0-0":11.4999999999998},"lastLookAheadCps":{}}}
+     frame: 1235
+     {"objects":[{"mass":200,"inertia":5000,"position":{"x":-50.95407785757465,"y":-11.862056157065878},"speed":{"x":-10.440970487326862,"y":289.99850148754194},"rotation":0.01611021102261189,"rotationSpeed":77.81312889400579,"cornerPointCoordinates":[{"x":-5,"y":-6},{"x":-5,"y":8},{"x":5,"y":8},{"x":5,"y":-6}],"parent":null,"fixed":false,"parentMountPoint":null,"childMountPoint":null,"addedSpeed":{"x":0,"y":0},"addedRotationSpeed":0},{"mass":5,"inertia":10000,"position":{"x":-55.872881453557056,"y":-16.94195489465411},"speed":null,"rotation":34.63139160156125,"rotationSpeed":6.299999999999994,"cornerPointCoordinates":[{"x":-1,"y":-2},{"x":-1,"y":2},{"x":1,"y":2},{"x":1,"y":-2}],"parent":0,"fixed":true,"parentMountPoint":{"x":-5,"y":-5},"childMountPoint":{"x":0,"y":0},"addedSpeed":{"x":0,"y":0},"addedRotationSpeed":0},{"mass":5,"inertia":10000,"position":{"x":-45.87417911998642,"y":-16.780859753048283},"speed":null,"rotation":34.63139160156126,"rotationSpeed":6.299999999999994,"cornerPointCoordinates":[{"x":-1,"y":-2},{"x":-1,"y":2},{"x":1,"y":2},{"x":1,"y":-2}],"parent":0,"fixed":true,"parentMountPoint":{"x":5,"y":-5},"childMountPoint":{"x":0,"y":0},"addedSpeed":{"x":0,"y":0},"addedRotationSpeed":0},{"mass":100,"inertia":46666.666666666664,"position":{"x":-125.86260143761912,"y":-0.06268226078089321},"speed":{"x":7.021009809193126,"y":-8.968630612226862},"rotation":10.019593785022304,"rotationSpeed":0.30151960635689984,"cornerPointCoordinates":[{"x":-10,"y":10},{"x":10,"y":10},{"x":10,"y":-10},{"x":-10,"y":-10}],"parent":null,"fixed":false,"parentMountPoint":null,"childMountPoint":null,"addedSpeed":{"x":0,"y":0},"addedRotationSpeed":0},{"mass":100000000000000000000,"inertia":3.5187500000000005e+24,"position":{"x":9.949794554392318e-17,"y":-20},"speed":{"x":5.596813890724992e-19,"y":-3.5122892673066792e-15},"rotation":-2.063831236108466e-18,"rotationSpeed":1.3979936912258683e-18,"cornerPointCoordinates":[{"x":-150,"y":100},{"x":-1,"y":100},{"x":-1,"y":96},{"x":-148,"y":96},{"x":-148,"y":1},{"x":148,"y":1},{"x":148,"y":96},{"x":1,"y":96},{"x":1,"y":100},{"x":150,"y":100},{"x":150,"y":-5},{"x":-150,"y":-5}],"parent":null,"fixed":false,"parentMountPoint":null,"childMountPoint":null,"addedSpeed":{"x":0,"y":0},"addedRotationSpeed":0}],"cps":[{"e":[4,4],"p":[1,1]},{"e":[4,4],"p":[2,1]},{"e":[4,4],"p":[1,2]}],"speedAdjuster":{"lastCollisionsTimes":{"3-0_0-1":0.6600000000000004,"0-0_3-1":0.7700000000000005,"3-1_1-1":0.8800000000000006,"4-4_3-2":0.9800000000000006,"4-4_3-3":1.0700000000000007,"4-4_2-3":11.259999999999804,"4-4_0-2":1.184531250000001,"4-4_2-2":10.99999999999981,"4-4_1-0":11.4999999999998,"4-4_2-0":11.4999999999998,"4-4_2-1":11.745312499999795,"4-4_1-1":11.745312499999795,"4-4_1-2":11.745312499999795,"4-4_1-3":11.259999999999804,"4-2_3-1":5.989999999999917,"4-3_3-2":10.229999999999826,"4-4_0-0":11.4999999999998},"lastLookAheadCps":{}}}
+
+
+     */
+    //var obj = {"objects":[{"mass":200,"inertia":5000,"position":{"x":42.68008539431117,"y":-13.312905326381282},"speed":{"x":-74.42797453714154,"y":265.6227625993197},"rotation":-1.6306973747118632,"rotationSpeed":81.17686618084554,"cornerPointCoordinates":[{"x":-5,"y":-6},{"x":-5,"y":8},{"x":5,"y":8},{"x":5,"y":-6}],"parent":null,"fixed":false,"parentMountPoint":null,"childMountPoint":null,"addedSpeed":{"x":0,"y":0},"addedRotationSpeed":0},{"mass":5,"inertia":10000,"position":{"x":38.09734409297295,"y":-7.9985979508927825},"speed":null,"rotation":6.375312499999887,"rotationSpeed":3.3000000000000016,"cornerPointCoordinates":[{"x":-1,"y":-2},{"x":-1,"y":2},{"x":1,"y":2},{"x":1,"y":-2}],"parent":0,"fixed":true,"parentMountPoint":{"x":-5,"y":-5},"childMountPoint":{"x":0,"y":0},"addedSpeed":{"x":0,"y":0},"addedRotationSpeed":0},{"mass":5,"inertia":10000,"position":{"x":37.38972689043657,"y":-18.00461150862263},"speed":null,"rotation":6.376021484374887,"rotationSpeed":3.3000000000000016,"cornerPointCoordinates":[{"x":-1,"y":-2},{"x":-1,"y":2},{"x":1,"y":2},{"x":1,"y":-2}],"parent":0,"fixed":true,"parentMountPoint":{"x":5,"y":-5},"childMountPoint":{"x":0,"y":0},"addedSpeed":{"x":0,"y":0},"addedRotationSpeed":0},{"mass":100,"inertia":46666.666666666664,"position":{"x":94.35871376023569,"y":18.71665666924469},"speed":{"x":30.56649488978616,"y":0.6400436817684811},"rotation":2.414122730875309,"rotationSpeed":0.6412810973146645,"cornerPointCoordinates":[{"x":-10,"y":10},{"x":10,"y":10},{"x":10,"y":-10},{"x":-10,"y":-10}],"parent":null,"fixed":false,"parentMountPoint":null,"childMountPoint":null,"addedSpeed":{"x":0,"y":0},"addedRotationSpeed":0},{"mass":100000000000000000000,"inertia":3.5187500000000005e+24,"position":{"x":-1.2272992730273847e-15,"y":-20},"speed":{"x":-9.792301597619939e-17,"y":-2.1640781966202846e-15},"rotation":-8.984691080698615e-18,"rotationSpeed":-1.0404105284389269e-18,"cornerPointCoordinates":[{"x":-150,"y":100},{"x":-1,"y":100},{"x":-1,"y":96},{"x":-148,"y":96},{"x":-148,"y":1},{"x":148,"y":1},{"x":148,"y":96},{"x":1,"y":96},{"x":1,"y":100},{"x":150,"y":100},{"x":150,"y":-5},{"x":-150,"y":-5}],"parent":null,"fixed":false,"parentMountPoint":null,"childMountPoint":null,"addedSpeed":{"x":0,"y":0},"addedRotationSpeed":0}],"cps":[{"e":[4,4],"p":[2,2]},{"e":[4,4],"p":[0,2]},{"e":[4,4],"p":[2,3]}],"speedAdjuster":{"lastCollisionsTimes":{"3-0_0-1":0.8500000000000005,"3-0_0-2":1.320000000000001,"4-4_3-2":1.7500000000000013,"3-0_2-3":1.410000000000001,"0-2_3-1":1.6300000000000012,"3-0_2-2":1.7000000000000013,"4-4_3-3":1.8000000000000014,"4-4_0-2":4.473124999999949,"4-4_2-3":4.473124999999949,"4-4_2-2":4.473124999999949,"4-5_0-2":4.249999999999954,"4-5_2-2":4.269999999999953,"4-4_1-0":9.949999999999832,"4-4_1-3":1.6600000000000013,"4-4_2-0":3.5299999999999687,"4-5_2-3":3.1999999999999758,"4-3_1-1":8.939999999999854,"4-3_0-1":9.09999999999985,"4-3_1-0":10.54999999999982,"1-0_3-3":0.7200000000000004,"4-4_2-1":4.049999999999958},"lastLookAheadCps":{}}};
+    //var obj = {"objects":[{"mass":200,"inertia":5000,"position":{"x":84.30137586279825,"y":-12.53074880096692},"speed":{"x":-15.825204515424225,"y":6.79050343481659},"rotation":1.7485369748395432,"rotationSpeed":0.9621910458835936,"cornerPointCoordinates":[{"x":-5,"y":-6},{"x":-5,"y":8},{"x":5,"y":8},{"x":5,"y":-6}],"parent":null,"fixed":false,"parentMountPoint":null,"childMountPoint":null,"addedSpeed":{"x":0,"y":-0.5800000000000907},"addedRotationSpeed":0},{"mass":5,"inertia":10000,"position":{"x":90.10663556962366,"y":-16.56794581576684},"speed":null,"rotation":107.4580000000022,"rotationSpeed":6.999999999999991,"cornerPointCoordinates":[{"x":-1,"y":-2},{"x":-1,"y":2},{"x":1,"y":2},{"x":1,"y":-2}],"parent":0,"fixed":true,"parentMountPoint":{"x":-5,"y":-5},"childMountPoint":{"x":0,"y":0},"addedSpeed":{"x":0,"y":0},"addedRotationSpeed":0},{"mass":5,"inertia":10000,"position":{"x":88.33857287759818,"y":-6.725489094141514},"speed":null,"rotation":107.45800000000223,"rotationSpeed":6.999999999999991,"cornerPointCoordinates":[{"x":-1,"y":-2},{"x":-1,"y":2},{"x":1,"y":2},{"x":1,"y":-2}],"parent":0,"fixed":true,"parentMountPoint":{"x":5,"y":-5},"childMountPoint":{"x":0,"y":0},"addedSpeed":{"x":0,"y":0},"addedRotationSpeed":0},{"mass":100,"inertia":46666.666666666664,"position":{"x":-63.079571925138694,"y":59.18481798104951},"speed":{"x":-2.379508352662522,"y":-0.3381064349792382},"rotation":7.0491803964050535,"rotationSpeed":0.3576879962172528,"cornerPointCoordinates":[{"x":-10,"y":10},{"x":10,"y":10},{"x":10,"y":-10},{"x":-10,"y":-10}],"parent":null,"fixed":false,"parentMountPoint":null,"childMountPoint":null,"addedSpeed":{"x":0,"y":0},"addedRotationSpeed":0},{"mass":100000000000000000000,"inertia":3.5187500000000005e+24,"position":{"x":8.833052530393502e-16,"y":-20},"speed":{"x":3.2090838920679303e-16,"y":-2.5401892089397186e-15},"rotation":-8.26511955507338e-18,"rotationSpeed":-1.5398376213446293e-18,"cornerPointCoordinates":[{"x":-150,"y":100},{"x":-1,"y":100},{"x":-1,"y":96},{"x":-148,"y":96},{"x":-148,"y":1},{"x":148,"y":1},{"x":148,"y":96},{"x":1,"y":96},{"x":1,"y":100},{"x":150,"y":100},{"x":150,"y":-5},{"x":-150,"y":-5}],"parent":null,"fixed":false,"parentMountPoint":null,"childMountPoint":null,"addedSpeed":{"x":0,"y":0},"addedRotationSpeed":0}],"cps":[{"e":[4,4],"p":[0,1]}],"speedAdjuster":{"lastCollisionsTimes":{"3-0_0-1":0.8500000000000005,"3-0_0-2":1.320000000000001,"4-4_3-2":1.7200000000000013,"3-0_2-0":1.7300000000000013,"0-2_3-1":1.6400000000000012,"4-4_3-3":1.7700000000000014,"4-4_0-1":21.04000000000049,"4-4_1-0":20.800000000000452,"4-4_1-1":21.04000000000049,"4-4_1-2":13.479999999999757,"4-4_1-3":20.73000000000044,"4-4_2-3":16.709999999999813,"4-4_2-0":16.74999999999982,"4-4_2-1":16.929999999999847,"4-4_2-2":16.37999999999976,"4-2_3-3":12.88999999999977,"4-4_0-2":16.529999999999784,"4-5_1-1":17.699999999999967,"4-5_2-1":17.70999999999997},"lastLookAheadCps":{}}}
+    var obj = {"objects":[{"mass":200,"inertia":5000,"position":{"x":-43.09478593251115,"y":-11.913842217549789},"speed":{"x":5.759449961565087,"y":0.17656813222808282},"rotation":-0.008001435675830199,"rotationSpeed":0.44837377368667136,"cornerPointCoordinates":[{"x":-5,"y":-6},{"x":-5,"y":8},{"x":5,"y":8},{"x":5,"y":-6}],"parent":null,"fixed":false,"parentMountPoint":null,"childMountPoint":null,"addedSpeed":{"x":0,"y":-1.1799999999999748},"addedRotationSpeed":0},{"mass":5,"inertia":10000,"position":{"x":-48.13463262741701,"y":-16.873675409487447},"speed":null,"rotation":31.382468750000307,"rotationSpeed":-2.900000000000002,"cornerPointCoordinates":[{"x":-1,"y":-2},{"x":-1,"y":2},{"x":1,"y":2},{"x":1,"y":-2}],"parent":0,"fixed":true,"parentMountPoint":{"x":-5,"y":-5},"childMountPoint":{"x":0,"y":0},"addedSpeed":{"x":0,"y":0},"addedRotationSpeed":0},{"mass":5,"inertia":10000,"position":{"x":-38.134952740573496,"y":-16.953688912455647},"speed":null,"rotation":31.382468750000374,"rotationSpeed":-2.900000000000002,"cornerPointCoordinates":[{"x":-1,"y":-2},{"x":-1,"y":2},{"x":1,"y":2},{"x":1,"y":-2}],"parent":0,"fixed":true,"parentMountPoint":{"x":5,"y":-5},"childMountPoint":{"x":0,"y":0},"addedSpeed":{"x":0,"y":0},"addedRotationSpeed":0},{"mass":100,"inertia":46666.666666666664,"position":{"x":-93.18978222950966,"y":6.7213057022949},"speed":{"x":4.839480708343153,"y":1.9390148920230035},"rotation":11.530055025118987,"rotationSpeed":0.22579490991265821,"cornerPointCoordinates":[{"x":-10,"y":10},{"x":10,"y":10},{"x":10,"y":-10},{"x":-10,"y":-10}],"parent":null,"fixed":false,"parentMountPoint":null,"childMountPoint":null,"addedSpeed":{"x":0,"y":0},"addedRotationSpeed":0},{"mass":100000000000000000000,"inertia":3.5187500000000005e+24,"position":{"x":-3.5506212444025e-17,"y":-20},"speed":{"x":-2.980682987618926e-17,"y":-4.45439654137884e-15},"rotation":1.1026670229354292e-17,"rotationSpeed":3.177481458050602e-18,"cornerPointCoordinates":[{"x":-150,"y":100},{"x":-1,"y":100},{"x":-1,"y":96},{"x":-148,"y":96},{"x":-148,"y":1},{"x":148,"y":1},{"x":148,"y":96},{"x":1,"y":96},{"x":1,"y":100},{"x":150,"y":100},{"x":150,"y":-5},{"x":-150,"y":-5}],"parent":null,"fixed":false,"parentMountPoint":null,"childMountPoint":null,"addedSpeed":{"x":0,"y":0},"addedRotationSpeed":0}],"cps":[{"e":[4,4],"p":[1,0]},{"e":[4,4],"p":[2,0]},{"e":[4,4],"p":[2,3]}],"speedAdjuster":{"lastCollisionsTimes":{"3-0_0-1":0.6600000000000004,"0-0_3-1":0.7700000000000005,"3-1_1-1":0.8800000000000006,"4-4_3-2":0.9800000000000006,"4-4_3-3":1.0700000000000007,"4-4_2-3":6.499999999999906,"4-4_0-2":1.184531250000001,"4-4_2-2":5.329999999999931,"4-4_1-0":6.499999999999906,"4-4_2-0":6.499999999999906,"4-4_2-1":5.979999999999917,"4-4_1-1":5.979999999999917,"4-4_1-2":5.339999999999931,"4-4_1-3":4.89999999999994,"4-2_3-1":5.989999999999917,"4-3_3-2":10.229999999999826,"4-4_0-0":11.4999999999998,"4-4_3-1":0.6500000000000004},"lastLookAheadCps":{}}}
+
+
+
+
+
+    scene.import(obj);
+
+    //initScene(scene);
+
     $(document.body).append(scene.view.container);
 
     /*var ct = new CollisionTester(scene);
@@ -307,7 +267,22 @@ $(document).ready(function () {
      $(document.body).append(ct.container);
      ct.start(function() {});*/
 
-    initScene(scene);
+    scene.stepCallback = function (object, dt) {
+        if (object.index < scene.objects.length - 3) {
+            //object.addSpeed(object.speed.x * -.01 * dt, object.speed.y * -.01 * dt, object.rotationSpeed * -.01);
+            object.addSpeed(0, -59 * dt, 0);
+        }
+
+        if (object.index == scene.objects.length - 2) {
+            if (scene.objects[scene.objects.length - 2].rotationSpeed < 10) {
+//                object.addSpeed(0, 0, .1, false);
+            }
+        }
+    };
+
     scene.play();
+
+    keyTimeout();
+
 });
 

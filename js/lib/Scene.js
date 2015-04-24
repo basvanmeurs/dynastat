@@ -63,6 +63,8 @@ var Scene = function() {
     };
 
     this.simulate = function() {
+        logSituation();
+
         var maxT = scene.t + Scene.TIMESTEP;
         var t = scene.t;
 
@@ -256,6 +258,48 @@ var Scene = function() {
         return dt;
     };
 
+    /**
+     * Exports a scene.
+     */
+    this.export = function() {
+        var i;
+        var obj = {objects: [], cps: [], speedAdjuster: null};
+        for (i = 0; i < scene.objects.length; i++) {
+            obj.objects.push(scene.objects[i].export());
+        }
+        for (i = 0; i < scene.collisionPoints.length; i++) {
+            var cp = scene.collisionPoints[i];
+            obj.cps.push({e: [cp.edgeSolidObject.index, cp.edge.index], p: [cp.pointSolidObject.index, cp.point.index]});
+        }
+         obj.speedAdjuster = this.speedAdjuster.export();
+        return obj;
+    };
+
+    /**
+     * Imports a scene.
+     * @param obj
+     */
+    this.import = function(obj) {
+        var i;
+        this.objects = [];
+        for (i = 0; i < obj.objects.length; i++) {
+            var so = new SolidObject();
+            so.import(this, obj.objects[i]);
+            this.addObject(so);
+        }
+        this.collisionPoints = [];
+        for (i = 0; i < obj.cps.length; i++) {
+            var k = obj.cps[i];
+            var cp = new CollisionPoint(
+                this.objects[k.p[0]],
+                this.objects[k.p[0]].cornerPoints[k.p[1]],
+                this.objects[k.e[0]],
+                this.objects[k.e[0]].cornerPoints[k.e[1]]
+            );
+            this.collisionPoints.push(cp);
+        }
+        this.speedAdjuster.import(obj.speedAdjuster);
+    };
 
 };
 
@@ -270,7 +314,7 @@ Scene.COLLISION_PROXIMITY = .01;
  * The time step per iteration.
  * @type {number}
  */
-Scene.TIMESTEP = .02;
+Scene.TIMESTEP = .01;
 
 var output = document.getElementById('output');
 Scene.log = function(msg) {

@@ -275,8 +275,6 @@ var SpeedAdjuster = function(scene) {
                         done[fxIndex] = true;
                     }
                 }
-
-                //@todo: if fixed root parent, add all collisions that belong to the same.
             }
 
             groups.push(group);
@@ -340,6 +338,25 @@ var SpeedAdjuster = function(scene) {
         // Set new collision points.
         this.scene.collisionPoints = newInfo.map(function(item) {return item.cp});
         this.info = newInfo;
+    };
+
+    /**
+     * Exports the solid object.
+     */
+    this.export = function() {
+        return {
+            lastCollisionsTimes: self.lastCollisionsTimes,
+            lastLookAheadCps: self.lastLookAheadCps
+        };
+    };
+
+    /**
+     * Imports an exported solid object.
+     * @param obj
+     */
+    this.import = function(obj) {
+        this.lastCollisionsTimes = obj.lastCollisionsTimes;
+        this.lastLookAheadCps = obj.lastLookAheadCps;
     };
 
 };
@@ -419,7 +436,7 @@ SpeedAdjusterGroup.prototype.getSolverItems = function() {
                     }
                 } else {
                     if (this.info[i].dist < 0) {
-                        if (this.info[i].dist < -10 * Scene.COLLISION_PROXIMITY) {
+                        if (this.info[i].dist < -2 * Scene.COLLISION_PROXIMITY) {
                             console.log('large collision overlap: ' + this.info[i].dist);
                         }
                         // Correct by applying extra impulse.
@@ -516,15 +533,16 @@ SpeedAdjusterGroup.prototype.solve = function(items) {
             self.speedAdjuster.staticSolverEngine.solve();
         } catch(err) {
             if (err instanceof FalseOverflowError) {
+                console.log('fae1: ' + err.index + ' ' + err.index2);
                 // Make a small adjustment. This may introduce a slight solution error but at least makes the matrix solvable.
                 for (var i = 0; i < items[err.index].fx.length; i++) {
                     if (items[err.index].fx[i].index == err.index2) {
-                        items[err.index].fx[i].effect += 1e-5;
+                        items[err.index].fx[i].effect += 1e-3;
                     }
                 }
                 for (i = 0; i < items[err.index2].fx.length; i++) {
                     if (items[err.index2].fx[i].index == err.index) {
-                        items[err.index2].fx[i].effect -= 1e-5;
+                        items[err.index2].fx[i].effect += 1e-3;
                     }
                 }
 
@@ -555,6 +573,7 @@ SpeedAdjusterGroup.prototype.solve = function(items) {
         // Continue and wish for the best.
     }
 
+    //console.log(self.speedAdjuster.staticSolverEngine.toString());
     if (!this.speedAdjuster.staticSolverEngine.solvedCorrectly(1e-4)) {
         logSituation();
         console.error("static solver engine didn't solve correctly in frame " + scene.frame + ": \n" + this.speedAdjuster.staticSolverEngine.toString() + "\n\n\nItems: " + JSON.stringify(items));
@@ -596,13 +615,13 @@ SpeedAdjusterGroup.prototype.applyFriction = function(pushSpeeds) {
             }
 
             // Get the speed effect per 1 unit of moment of applied friction.
-            var mDv1Perp = nPerp.mul(-1 / this.info[i].o1.mass);
-            var mDv2Perp = nPerp.mul(1 /this.info[i].o2.mass);
-            var mDw1Perp = -this.info[i].r1.crossProduct(nPerp) / this.info[i].o1.inertia;
-            var mDw2Perp = this.info[i].r2.crossProduct(nPerp) / this.info[i].o2.inertia;
+            var mDv1Perp = nPerp.mul(-1 / this.info[i].appO1.getMass());
+            var mDv2Perp = nPerp.mul(1 /this.info[i].appO2.getMass());
+            var mDw1Perp = -this.info[i].appR1.crossProduct(nPerp) / this.info[i].appO1.getInertia();
+            var mDw2Perp = this.info[i].appR2.crossProduct(nPerp) / this.info[i].appO2.getInertia();
 
             // Get the vd netto result of 1 unit of moment of applied friction.
-            var vdNetto = ((mDv2Perp.add(this.info[i].r2.getPerp().mul(mDw2Perp))).d(nPerp) - (mDv1Perp.add(this.info[i].r1.getPerp().mul(mDw1Perp))).d(nPerp));
+            var vdNetto = ((mDv2Perp.add(this.info[i].appR2.getPerp().mul(mDw2Perp))).d(nPerp) - (mDv1Perp.add(this.info[i].appR1.getPerp().mul(mDw1Perp))).d(nPerp));
 
             // Check if the friction effect causes a change in speed direction.
             if (vd > 0) {
@@ -621,14 +640,14 @@ SpeedAdjusterGroup.prototype.applyFriction = function(pushSpeeds) {
             frictionImpulse = Math.min(frictionImpulse, 300);
 
             // Apply the friction impulse on both solid objects.
-            this.info[i].o1.applyImpulseAbsolute(
+            this.info[i].appO1.applyImpulseAbsolute(
                 this.info[i].abs,
                 nPerp,
                 -frictionImpulse,
                 true
             );
 
-            this.info[i].o2.applyImpulseAbsolute(
+            this.info[i].appO2.applyImpulseAbsolute(
                 this.info[i].abs,
                 nPerp,
                 frictionImpulse,

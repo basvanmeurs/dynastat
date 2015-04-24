@@ -138,3 +138,7 @@ Vector.prototype.toString = function() {
     var yStr = this.y.toFixed(2);
     return '[' + xStr + ',' + yStr + ']';
 };
+
+Vector.import = function(obj) {
+    return new Vector(obj.x, obj.y);
+};

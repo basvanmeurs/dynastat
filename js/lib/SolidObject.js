@@ -95,6 +95,13 @@ var SolidObject = function() {
     this.addedRotationSpeed = 0;
 
     /**
+     * In case of a fixed child, the rotation speed is added to the fixed root by default.
+     * This is the alternative value for adding rotation speed to the child.
+     * @type {number}
+     */
+    this.addedFixedChildRotationSpeed = 0;
+
+    /**
      * If this is a child object, the parent it belongs to.
      * @type {SolidObject}
      * @private
@@ -183,6 +190,7 @@ var SolidObject = function() {
      * @param {SolidObject} parent
      * @param {Vector} parentMountPoint
      * @param {Vector} childMountPoint
+     *   In fixed objects, the child mountpoint is always (0,0) and this parameter is ignored.
      * @param {Vector[]} cornerPointCoordinates
      * @param {Boolean} [fixed]
      */
@@ -192,7 +200,7 @@ var SolidObject = function() {
         this.mass = mass;
         this.parent = parent;
         this.parentMountPoint = parentMountPoint;
-        this.childMountPoint = childMountPoint;
+        this.childMountPoint = (fixed ? new Vector(0,0) : childMountPoint);
         this.fixed = fixed ? true : false;
 
         if (this.fixed) {
@@ -506,7 +514,7 @@ var SolidObject = function() {
         if (direct) {
             this.rotationSpeed += rot;
         } else {
-            this.addedRotationSpeed += rot;
+            this.addedFixedChildRotationSpeed += rot;
         }
     };
 
@@ -516,6 +524,10 @@ var SolidObject = function() {
      */
     this.applyAddedSpeed = function() {
         this.addSpeed(this.addedSpeed.x, this.addedSpeed.y, this.addedRotationSpeed, true);
+        if (this.addedFixedChildRotationSpeed) {
+            this.rotationSpeed += this.addedFixedChildRotationSpeed;
+            this.addedFixedChildRotationSpeed = 0;
+        }
 
         this.addedSpeed.x = 0;
         this.addedSpeed.y = 0;
@@ -564,6 +576,7 @@ var SolidObject = function() {
      *   Both of the solid objects will be progressed to either maxTime or the collision time.
      */
     this.getCollision = function(that, time, maxTime) {
+        // Check for parent-child relations.
         if (this.parent == that || that.parent == this) {
             return null;
         }
@@ -819,5 +832,50 @@ var SolidObject = function() {
         var relCoords = this.getRelativeCoordinates(coords);
         var relN = n.rotate(-this.rotation);
         this.applyImpulse(relCoords, relN, impulse, direct);
+    };
+
+    /**
+     * Exports the solid objects situation.
+     */
+    this.export = function() {
+        return {
+            mass: this.mass,
+            inertia: this.inertia,
+            position: this.position,
+            speed: this.speed,
+            rotation: this.rotation,
+            rotationSpeed: this.rotationSpeed,
+            cornerPointCoordinates: this.cornerPoints.map(function(item) {return item.coordinates}),
+            parent: this.parent ? this.parent.index : null,
+            fixed: this.fixed,
+            parentMountPoint: this.parentMountPoint,
+            childMountPoint: this.childMountPoint,
+            addedSpeed: this.addedSpeed,
+            addedRotationSpeed: this.addedRotationSpeed,
+            addedFixedRotationSpeed: this.addedFixedRotationSpeed
+        };
+    };
+
+    /**
+     * Imports an exported solid object.
+     * @param obj
+     */
+    this.import = function(scene, obj) {
+        var cpCoords = obj.cornerPointCoordinates.map(function(item) {return Vector.import(item)});
+        if (obj.parent !== null) {
+            this.initChild(scene, obj.mass, obj.inertia, scene.objects[obj.parent], Vector.import(obj.parentMountPoint), Vector.import(obj.childMountPoint), cpCoords, obj.fixed);
+        } else {
+            this.init(scene, obj.mass, obj.inertia, Vector.import(obj.position), cpCoords);
+        }
+
+        this.rotation = obj.rotation;
+        this.speed = obj.speed ? Vector.import(obj.speed) : null;
+        this.rotationSpeed = obj.rotationSpeed;
+
+        this.addedFixedChildRotationSpeed = obj.addedFixedChildRotationSpeed ? Vector.import(obj.addedFixedChildRotationSpeed) : null;
+        this.addedRotationSpeed = obj.addedRotationSpeed;
+        this.addedSpeed = Vector.import(obj.addedSpeed);
+
+        this.updateCornerPoints();
     };
 };
