@@ -57,7 +57,7 @@ var StaticSolverEngine = function(maxPoints) {
     this.n = 0;
 
     /**
-     * The points.
+     * The points. Conn: push-pull connection ('sticky' connection).
      * @type {{diff: number, fx: {index: int, effect: number}, conn: Boolean}[]}
      */
     this.points = null;

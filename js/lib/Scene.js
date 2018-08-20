@@ -63,7 +63,7 @@ var Scene = function() {
     };
 
     this.simulate = function() {
-        logSituation();
+//        logSituation();
 
         var maxT = scene.t + Scene.TIMESTEP;
         var t = scene.t;

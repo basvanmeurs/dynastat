@@ -322,9 +322,12 @@ var SolidObject = function() {
      * @param t
      */
     this.confirmT = function(t) {
-        var ft = t - this.confirmedT;
+        if (this.confirmedT) {
+            // Prevent huge ft when adding new objects.
+            var ft = t - this.confirmedT;
+            this.scene.stepCallback(this, ft);
+        }
         this.confirmedT = t;
-        this.scene.stepCallback(this, ft);
     };
 
     /**
@@ -414,8 +417,21 @@ var SolidObject = function() {
     };
 
     /**
+     * Returns the speed relative to solid object at the specified relative coordinates.
+     * @param coordinates
+     */
+    this.getRelativeSpeedAtRelCoords = function(coordinates) {
+        // Get absolute speed.
+        var speed = this.getSpeedAtRelCoords(coordinates);
+
+        // Convert to relative speed by rotating it back.
+        return speed.rotate(-this.getAbsoluteRotation());
+    };
+
+    /**
      * Returns the speed of this solid object at the specified absolute coordinates.
      * @param coordinates
+     * @return {Vector}
      */
     this.getSpeedAt = function(coordinates) {
         var relCoordinates = coordinates.sub(this.getPosition());
@@ -423,6 +439,24 @@ var SolidObject = function() {
 
         if (this.parent && this.fixed) {
             var speed = this.parent.getSpeedAt(coordinates);
+
+            // Add local rotation to the speed.
+            return speed.add(localRotationSpeed);
+        } else {
+            return this.speed.add(localRotationSpeed);
+        }
+    };
+
+    /**
+     * Returns the speed of this solid object at the specified relative coordinates.
+     * @param relCoordinates
+     * @return {Vector}
+     */
+    this.getSpeedAtRelCoords = function(relCoordinates) {
+        var localRotationSpeed = relCoordinates.getPerp().mul(this.rotationSpeed);
+
+        if (this.parent && this.fixed) {
+            var speed = this.parent.getSpeedAt(this.getAbsoluteCoordinates(relCoordinates));
 
             // Add local rotation to the speed.
             return speed.add(localRotationSpeed);
@@ -803,7 +837,7 @@ var SolidObject = function() {
      *   The direction (normal) of the applied impulse (relative).
      * @param {Number} impulse
      *   The impulse in kg * m/s.
-     * @param {Boolean} direct
+     * @param {Boolean} [direct]
      *   If not direct, the speed addition will be postponed until the next call to applyAddedSpeed.
      */
     this.applyImpulse = function(coords, n, impulse, direct) {
@@ -825,7 +859,7 @@ var SolidObject = function() {
      *   The direction (normal) of the applied impulse (absolute).
      * @param {Number} impulse
      *   The impulse in kg * m/s.
-     * @param {Boolean} direct
+     * @param {Boolean} [direct]
      *   If not direct, the speed addition will be postponed until the next call to applyAddedSpeed.
      */
     this.applyImpulseAbsolute = function(coords, n, impulse, direct) {

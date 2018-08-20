@@ -54,7 +54,7 @@ var View = function(scene) {
                 if (inCollision) {
                     this.context.strokeStyle = '#0000ff';
                 } else {
-                    this.context.strokeStyle = '#eeeeee';
+                    this.context.strokeStyle = '#222222';
                 }
                 this.context.beginPath();
                 this.context.moveTo(s.x, s.y);
@@ -68,7 +68,7 @@ var View = function(scene) {
             // Center of mass.
             this.context.fillStyle = "#00ffff";
             var t = this.translateCoords(obj.position);
-            this.context.fillRect(t.x - 2, t.y - 2, 4, 4);
+            this.context.fillRect(t.x - 1, t.y - 1, 2, 2);
         }
 
         // Show collision points.
@@ -107,7 +107,7 @@ var View = function(scene) {
      * @return {Vector}
      */
     this.translateCoords = function(coords) {
-        return new Vector(this.width * .5 + coords.x * 4, this.height *.75 - coords.y * 4);
+        return new Vector(this.width * .5 + coords.x * 5, this.height *.75 - coords.y * 5);
     };
 
     this.width = $(window).width();

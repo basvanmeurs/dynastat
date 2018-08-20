@@ -450,12 +450,14 @@ SpeedAdjusterGroup.prototype.getSolverItems = function() {
             }
         }
 
-        var item = {diff: d, fx: this.info[i].fx, conn: this.info[i].connection};
+        var item = {diff: d, fx: this.info[i].fx, conn: this.info[i].connection, x: this.info[i].abs.x, y: this.info[i].abs.y, obj1Index: this.info[i].o1.index, obj2Index: this.info[i].o2.index};
 
         items.push(item);
     }
 
-    return items;
+    //console.log(items.length);
+    //console.log(JSON.stringify(items));
+      return items;
 };
 
 /**
@@ -496,7 +498,7 @@ SpeedAdjusterGroup.prototype.adjust = function() {
     var newInfos = [];
     for (i = 0; i < this.info.length; i++) {
         if (!this.info[i].connection) {
-            if (!(result[i] == 0 && (this.info[i].dist > .2) && (!this.speedAdjuster.lastLookAheadCps.hasOwnProperty(this.info[i].key)))) {
+            if (!(result[i] == 0 && (this.info[i].dist > .02) && (!this.speedAdjuster.lastLookAheadCps.hasOwnProperty(this.info[i].key)))) {
                 newInfos.push(this.info[i]);
             }
         }
